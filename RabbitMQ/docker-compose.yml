@@ -9,6 +9,7 @@ services:
       - RABBITMQ_DEFAULT_USER=rmuser
       - RABBITMQ_DEFAULT_PASS=rmpassword
     ports:
+      - 5672:5672
       - 15672:15672
     networks:
       example-app-net:
@@ -17,8 +18,6 @@ services:
   app:
     build:
       context: .
-    environment:
-      AMQP_URL: 'amqp://rmuser:rmpassword@215.21.0.54:15672?connection_attempts=5&retry_delay=5'
     command:
       - /bin/bash
       - -c
