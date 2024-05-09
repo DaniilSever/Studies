@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 services:
   rabbitmq:
@@ -15,9 +15,10 @@ services:
       example-app-net:
         ipv4_address: 215.21.0.54
 
-  app:
-    build:
-      context: .
+# ---- Application ----
+  publisher:
+    build: 
+      context: ./publisher
     command:
       - /bin/bash
       - -c
@@ -25,17 +26,34 @@ services:
         sh wait-rabbitmq.sh
         sh cmd-local.sh
     volumes:
-      - ./src:/src # code
+      - ./publisher/src:/src # code
     ports:
-      - 8080:8080
+      - 8000:8080
     depends_on:
       - rabbitmq
     networks:
       example-app-net:
         ipv4_address: 215.21.0.100
 
-      
-  
+  consumer:
+    build: 
+      context: ./consumer
+    command:
+      - /bin/bash
+      - -c
+      - |
+        sh wait-rabbitmq.sh
+        sh cmd-local.sh
+    volumes:
+      - ./consumer/src:/src # code
+    ports:
+      - 8080:8080
+    depends_on:
+      - publisher
+    networks:
+      example-app-net:
+        ipv4_address: 215.21.0.102
+
 
 networks:
   example-app-net:
