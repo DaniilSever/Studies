@@ -5,5 +5,6 @@ class Config:
     RABBITMQ_PORT = 5672
     RABBITMQ_VHOST = "/"
 
+
 def get_config():
     return Config()

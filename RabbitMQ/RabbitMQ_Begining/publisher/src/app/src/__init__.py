@@ -5,6 +5,4 @@ publishers = [
 ]
 
 
-__all__ = [
-    publishers 
-]
+__all__ = [publishers]

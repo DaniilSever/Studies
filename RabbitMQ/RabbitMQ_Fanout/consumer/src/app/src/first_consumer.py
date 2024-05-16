@@ -21,6 +21,7 @@ queue_name = "Bank"
 routing_key = ""
 total = 0
 
+
 def consumer():
     connection = BlockingConnection(rmq_params)
     channel = connection.channel()

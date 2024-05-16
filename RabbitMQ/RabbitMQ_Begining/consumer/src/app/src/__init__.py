@@ -7,6 +7,4 @@ consumers = [
 ]
 
 
-__all__ = [
-    consumers
-]
+__all__ = [consumers]
