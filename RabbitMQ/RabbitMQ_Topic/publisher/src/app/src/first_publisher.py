@@ -21,24 +21,27 @@ def publisher():
     channel = connection.channel()
     channel.exchange_declare(exchange="topic_exchange", exchange_type="topic")
 
-    messages = [str(item) for item in range(10)]
+    file_list = [
+        "log_1.txt",
+        "movie_1.mp4",
+        "log_2.txt",
+        "movie_2.mp4",
+        "log_3.txt",
+        "movie_3.mp4",
+        "log_4.txt",
+        "movie_4.mp4",
+        "log_5.txt",
+        "movie_5.mp4",
+    ]
 
-    for message in messages:
+
+    for file in file_list:
         channel.basic_publish(
             exchange="topic_exchange",
-            routing_key="list.txt",
-            body=message,
+            routing_key=file[file.find("."):],
+            body=file,
         )
-        print(f" [x] Sent '{message}' to routing_key '.txt'")
-        time.sleep(0.5)
-
-    for message in messages:
-        channel.basic_publish(
-            exchange="topic_exchange",
-            routing_key="movie.mp4",
-            body=message,
-        )
-        print(f" [x] Sent '{message}' to routing_key '.mp4'")
+        print(f"\n [x] Sent '{file}' to routing_key '{file[file.find("."):]}'")
         time.sleep(0.5)
 
     connection.close()

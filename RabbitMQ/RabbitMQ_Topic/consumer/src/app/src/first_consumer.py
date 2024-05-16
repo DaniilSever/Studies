@@ -28,7 +28,7 @@ def consumer():
 
     def callback(ch, method, properties, body):
         order_date = body.decode("utf-8")
-        print(f" [x] Consumer heard file .mp4: {order_date}")
+        print(f" [✔] Consumer heard file .mp4: {order_date}")
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     channel.queue_declare(queue=queue_name, durable=True)

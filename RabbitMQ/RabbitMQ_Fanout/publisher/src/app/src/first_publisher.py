@@ -30,7 +30,7 @@ def publisher():
             routing_key="",
             body=message,
         )
-        print(f" [x] Sent '{message}'")
+        print(f"\n [x] Sent '{message}'")
         time.sleep(0.5)
 
     connection.close()

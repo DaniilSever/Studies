@@ -11,9 +11,6 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
-    networks:
-      example-app-net:
-        ipv4_address: 215.21.0.54
 
 # ---- Application ----
   publisher:
@@ -31,9 +28,6 @@ services:
       - 8000:8080
     depends_on:
       - rabbitmq
-    networks:
-      example-app-net:
-        ipv4_address: 215.21.0.100
 
   consumer:
     build: 
@@ -50,15 +44,3 @@ services:
       - 8080:8080
     depends_on:
       - publisher
-    networks:
-      example-app-net:
-        ipv4_address: 215.21.0.102
-
-
-networks:
-  example-app-net:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 215.21.0.0/16

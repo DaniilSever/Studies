@@ -29,7 +29,7 @@ def publisher():
 
     for message in messages:
         channel.basic_publish(exchange="", routing_key="test", body=message)
-        print(f" [x] Sent '{message}'")
+        print(f"\n [x] Sent '{message}'")
         time.sleep(0.5)
 
     connection.close()
