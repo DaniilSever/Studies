@@ -13,22 +13,6 @@ services:
       - 15672:15672
 
 # ---- Application ----
-  publisher:
-    build: 
-      context: ./publisher
-    command:
-      - /bin/bash
-      - -c
-      - |
-        sh wait-rabbitmq.sh
-        sh cmd-local.sh
-    volumes:
-      - ./publisher/src:/src # code
-    ports:
-      - 8000:8080
-    depends_on:
-      - rabbitmq
-
   consumer:
     build: 
       context: ./consumer
@@ -43,4 +27,20 @@ services:
     ports:
       - 8080:8080
     depends_on:
-      - publisher
+      - rabbitmq
+
+  publisher:
+    build: 
+      context: ./publisher
+    command:
+      - /bin/bash
+      - -c
+      - |
+        sh wait-rabbitmq.sh
+        sh cmd-local.sh
+    volumes:
+      - ./publisher/src:/src # code
+    ports:
+      - 8000:8080
+    depends_on:
+      - consumer
