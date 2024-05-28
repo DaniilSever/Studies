@@ -14,6 +14,8 @@ services:
 
 # ---- Application ----
   consumer:
+    depends_on:
+        - rabbitmq
     build: 
       context: ./consumer
     command:
@@ -26,10 +28,11 @@ services:
       - ./consumer/src:/src # code
     ports:
       - 8000:8080
-    depends_on:
-      - rabbitmq
+    
 
   publisher:
+    depends_on:
+        - consumer
     build: 
       context: ./publisher
     command:
@@ -42,5 +45,4 @@ services:
       - ./publisher/src:/src # code
     ports:
       - 9000:8080
-    depends_on:
-      - consumer
+    
