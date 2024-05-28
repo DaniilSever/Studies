@@ -1,4 +1,4 @@
-import time
+from random import randint
 from pika import (
     BlockingConnection,
     ConnectionParameters,
@@ -35,7 +35,10 @@ def publisher():
         message = body.decode("utf-8")
         print(f" [jivochat↓] Message received: '{message}'")
 
-    ch.queue_declare(queue=queue_name, durable=True)
+    ch.queue_declare(queue=queue_name, durable=True, arguments={
+        'x-dead-letter-exchange': 'dlx',
+        'x-dead-letter-routing-key': 'dl',
+    })
     ch.queue_bind(
         exchange="topic_exchange", queue=queue_name, routing_key=queue_name
     )
@@ -44,3 +47,7 @@ def publisher():
     send_message("I need help!...")
 
     ch.start_consuming()
+    # if randint(0, 1) == 0:
+    #     ch.start_consuming()
+    # else:
+    #     cn.close()

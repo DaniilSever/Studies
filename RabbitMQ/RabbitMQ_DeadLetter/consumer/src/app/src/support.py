@@ -25,9 +25,9 @@ def consumer():
     ch = cn.channel()
     ch.exchange_declare(exchange="topic_exchange", exchange_type="topic")
 
-    def return_answer(routing_key):
+    def return_answer(method):
         message = f"Thank you for your message. I will help you as soon as possible."
-        ch.basic_publish(
+        ch.basic_reject(
             exchange="topic_exchange",
             routing_key=routing_key[routing_key.find(".")+1:],
             body=message,
@@ -40,9 +40,13 @@ def consumer():
         print(f" [support↓] Problem received: '{message}'")
         print(f" [support] Processing...")
         sleep(5)
-        return_answer(method.routing_key)
+        ch.basic_reject(delivery_tag = method.delivery_tag, requeue=False)
+        print(f" [support↑] Answer sent: '{message}'")
 
-    ch.queue_declare(queue=queue_name, durable=True)
+    ch.queue_declare(queue=queue_name, durable=True, arguments={
+        'x-dead-letter-exchange': 'dlx',
+        'x-dead-letter-routing-key': 'dl',
+    })
     ch.queue_bind(
         exchange="topic_exchange", queue=queue_name, routing_key=routing_key
     )
