@@ -18,38 +18,40 @@ rmq_params = ConnectionParameters(
 )
 
 queue_name = "support"
-routing_key = "help.*"
+routing_key = "help.#"
+
 
 def consumer():
     cn = BlockingConnection(rmq_params)
     ch = cn.channel()
     ch.exchange_declare(exchange="topic_exchange", exchange_type="topic")
 
-    def return_answer(method):
+    def return_answer(routing_key):
         message = f"Thank you for your message. I will help you as soon as possible."
-        ch.basic_reject(
+        ch.basic_publish(
             exchange="topic_exchange",
-            routing_key=routing_key[routing_key.find(".")+1:],
+            routing_key=routing_key[routing_key.find(".") + 1 :],
             body=message,
         )
         print(f" [support↑] Answer sent: '{message}'")
-
 
     def callback(ch, method, properties, body):
         message = body.decode("utf-8")
         print(f" [support↓] Problem received: '{message}'")
         print(f" [support] Processing...")
         sleep(5)
-        ch.basic_reject(delivery_tag = method.delivery_tag, requeue=False)
-        print(f" [support↑] Answer sent: '{message}'")
+        return_answer(method.routing_key)
 
-    ch.queue_declare(queue=queue_name, durable=True, arguments={
-        'x-dead-letter-exchange': 'dlx',
-        'x-dead-letter-routing-key': 'dl',
-    })
-    ch.queue_bind(
-        exchange="topic_exchange", queue=queue_name, routing_key=routing_key
+    ch.queue_declare(
+        queue=queue_name,
+        durable=True,
+        arguments={
+            "x-message-ttl": 1000,
+            "x-dead-letter-exchange": "dlx",
+            "x-dead-letter-routing-key": "dl",
+        },
     )
+    ch.queue_bind(exchange="topic_exchange", queue=queue_name, routing_key=routing_key)
     ch.basic_consume(queue=queue_name, on_message_callback=callback)
 
     print(" [support] Waiting for messages. To exit press CTRL+C")

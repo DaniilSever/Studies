@@ -1,3 +1,4 @@
+from uuid import uuid4
 from random import randint
 from pika import (
     BlockingConnection,
@@ -17,12 +18,16 @@ rmq_params = ConnectionParameters(
     heartbeat=30,
 )
 
-queue_name = "telegram"
-routing_key = "help.telegram"
 
 def publisher():
     cn = BlockingConnection(rmq_params)
     ch = cn.channel()
+
+    user = str(uuid4())
+
+    queue_name = "telegram." + user
+    routing_key = "help." + queue_name
+
     ch.exchange_declare(exchange="topic_exchange", exchange_type="topic")
 
     def send_message(message):
@@ -35,15 +40,18 @@ def publisher():
         message = body.decode("utf-8")
         print(f" [telegram↓] Message received: '{message}'")
 
-    ch.queue_declare(queue=queue_name, durable=True, arguments={
-        'x-dead-letter-exchange': 'dlx',
-        'x-dead-letter-routing-key': 'dl',
-    })
-    ch.queue_bind(
-        exchange="topic_exchange", queue=queue_name, routing_key=queue_name
+    ch.queue_declare(
+        queue=queue_name,
+        durable=True,
+        arguments={
+            "x-message-ttl": 1000,
+            "x-dead-letter-exchange": "dlx",
+            "x-dead-letter-routing-key": "dl",
+        },
     )
+    ch.queue_bind(exchange="topic_exchange", queue=queue_name, routing_key=queue_name)
     ch.basic_consume(queue=queue_name, on_message_callback=callback)
 
     send_message("I need help!...")
-    
+
     ch.start_consuming()
