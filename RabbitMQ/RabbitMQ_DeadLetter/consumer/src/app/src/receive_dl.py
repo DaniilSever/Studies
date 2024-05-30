@@ -23,14 +23,14 @@ def consumer():
     ch = cn.channel()
     ch.exchange_declare(exchange="dlx", exchange_type="topic")
 
-    def send_email(email, message): 
+    def send_email(email, message):
         # smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
         # smtpObj.starttls()
         # smtpObj.login('someaddress@gmail.com','somepassword')
         # smtpObj.sendmail("someaddress@gmail.com", email, message)
         # smtpObj.quit()
         print(f" [dl↑] Message sent to {email} ")
-        
+
     def callback(ch, method, properties, body):
         message = body.decode("utf-8")
         print(f" [dl↓] DeadLetter heard: '{message}'")
@@ -38,9 +38,7 @@ def consumer():
         print(" [dl] The message will be delivered to your e-mail")
         routing_key = properties.headers["x-death"][0]["routing-keys"][0]
 
-        send_email(routing_key[routing_key.find(".")+1:], message)
-
-
+        send_email(routing_key[routing_key.find(".") + 1 :], message)
 
     ch.queue_declare(queue="dl", durable=True)
     ch.queue_bind(exchange="dlx", queue="dl", routing_key="dl")

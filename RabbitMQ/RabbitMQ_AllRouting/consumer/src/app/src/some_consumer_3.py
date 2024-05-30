@@ -28,7 +28,7 @@ def topic_consumer():
 
     def callback(ch, method, properties, body):
         global total
-        message = body.decode('utf-8')
+        message = body.decode("utf-8")
         print(f" [✔TC] Consumer heard file .mp4: {message}")
 
     ch.queue_declare(queue=queue_name, durable=True)
