@@ -6,7 +6,7 @@ c = Consumer({
     'auto.offset.reset': 'earliest'
 })
 
-c.subscribe(['mytopic'])
+c.subscribe(['testtopic'])
 
 while True:
     msg = c.poll(1.0)
@@ -15,7 +15,7 @@ while True:
         continue
     if msg.error():
         print("Consumer error: {}".format(msg.error()))
-        continue
+        break
 
     print('Received message: {}'.format(msg.value().decode('utf-8')))
 

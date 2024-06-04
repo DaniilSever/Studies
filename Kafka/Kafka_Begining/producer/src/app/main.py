@@ -12,7 +12,7 @@ G = [str(i) for i in range(1, 10)]
 
 for data in G:
     p.poll(0)
-    
-    p.produce('mytopic', data.encode('utf-8'), callback=delivery_report)
+
+    p.produce('testtopic', data.encode('utf-8'), callback=delivery_report)
 
 p.flush()
