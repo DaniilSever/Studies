@@ -21,6 +21,7 @@ queue_name = "Fanout_Bank"
 routing_key = ""
 total = 0
 
+
 def fanout_consumer():
     cn = BlockingConnection(rmq_params)
     ch = cn.channel()
@@ -28,7 +29,7 @@ def fanout_consumer():
 
     def callback(ch, method, properties, body):
         global total
-        message = body.decode('utf-8')
+        message = body.decode("utf-8")
         total += int(message)
         print(f" [✔FC] Consumer '{queue_name}' heard: {total}")
 

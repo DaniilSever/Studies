@@ -23,8 +23,8 @@ def publisher():
     cn = BlockingConnection(rmq_params)
     ch = cn.channel()
 
-    user = ''.join(choices(ascii_letters + digits, k=15))
-    email = user + '@example.com'
+    user = "".join(choices(ascii_letters + digits, k=15))
+    email = user + "@example.com"
 
     queue_name = "jivochat." + email
     routing_key = "help." + queue_name

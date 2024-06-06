@@ -34,7 +34,7 @@ def publisher():
         "TEST",
         "Hello",
         "Direct Publisher close",
-        "movie.mp4"
+        "movie.mp4",
     ]
 
     ch.queue_declare(queue="direct_queue")

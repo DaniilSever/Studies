@@ -34,11 +34,10 @@ def publisher():
         "movie_5.mp4",
     ]
 
-
     for file in file_list:
         ch.basic_publish(
             exchange="topic_exchange",
-            routing_key=file[file.find("."):],
+            routing_key=file[file.find(".") :],
             body=file,
         )
         print(f"\n [TP] Sent '{file}' to routing_key '{file[file.find("."):]}'")
