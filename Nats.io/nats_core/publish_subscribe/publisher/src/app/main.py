@@ -1,43 +1,35 @@
-import os
 import asyncio
-
-
 import nats
 from nats.errors import TimeoutError
 
+async def publisher():
 
-servers = os.environ.get("NATS_URL", "nats://127.0.0.1:6222").split(",")
+    nc = await nats.connect("nats://demo.nats.io:4222")
+
+    await nc.publish("foo", b'Hello')
+    await nc.publish("foo", b'World')
+    await nc.publish("foo", b'!!!!!')
+
+    await nc.publish("bar", b'First')
+    await nc.publish("bar", b'Second')
 
 
-async def main():
+    async def help_request(msg):
+        print(f"Received a message on '{msg.subject} {msg.reply}': {msg.data.decode()}")
+        await nc.publish(msg.reply, b'I can help')
 
-    nc = await nats.connect(servers=servers)
-
-    await nc.publish("greet.joe", b"hello")
-    sub = await nc.subscribe("greet.*")
-
+    sub = await nc.subscribe("help", "workers", help_request)
+    
     try:
-        msg = await sub.next_msg(timeout=0.1)
+        response = await nc.request("help", b'help me', timeout=0.5)
+        print("Received response: {message}".format(
+            message=response.data.decode()))
     except TimeoutError:
-        pass
-
-    await nc.publish("greet.joe", b"hello")
-    await nc.publish("greet.pam", b"hello")
-
-    msg = await sub.next_msg(timeout=0.1)
-    print(f"{msg.data} on subject {msg.subject}")
-
-    msg = await sub.next_msg(timeout=0.1)
-    print(f"{msg.data} on subject {msg.subject}")
-
-    await nc.publish("greet.bob", b"hello")
-
-    msg = await sub.next_msg(timeout=0.1)
-    print(f"{msg.data} on subject {msg.subject}")
+        print("Request timed out")
 
     await sub.unsubscribe()
+
     await nc.drain()
 
-
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.run(publisher())
