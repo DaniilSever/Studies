@@ -1,9 +1,9 @@
-from .some_consumer_1 import consumer as first_consumer
-from .some_consumer_2 import consumer as second_consumer
+from .file_sharing import consumer as sharing
+from .some_chat import consumer as chat
 
 consumers = [
-    first_consumer(),
-    second_consumer(),
+    sharing(),
+    chat(),
 ]
 
 __all__ = [
