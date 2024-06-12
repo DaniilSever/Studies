@@ -10,8 +10,7 @@ async def publisher():
     await js.add_stream(name="test", subjects=["test"])
 
     for i in range(0, 10):
-        ack = await js.publish("test", f"Test Message: {i}".encode())
-        print(ack)
+        await js.publish("test", f"Test Message: {i}".encode())
         await asyncio.sleep(0.5)
 
     await nc.drain()

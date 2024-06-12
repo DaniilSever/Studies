@@ -21,6 +21,5 @@ async def consumer():
     await js.subscribe("test", cb=qsub_b)
 
 
-
 if __name__ == "__main__":
     asyncio.run(consumer())
