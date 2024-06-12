@@ -9,7 +9,7 @@ async def consumer():
     try:
         async for msg in sub.messages:
             print(
-                f"Received a message on '{msg.subject} {msg.reply}': {msg.data.decode()}"
+                f" [second↓] Received a message on '{msg.subject} {msg.reply}': {msg.data.decode()}"
             )
     except Exception as e:
         print(str(e))
