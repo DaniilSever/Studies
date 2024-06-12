@@ -1,15 +1,13 @@
 import asyncio
 import nats
 from uuid import uuid4
-from string import ascii_letters, digits, ascii_lowercase
+from string import ascii_letters, digits
 from random import randint, choices
-from nats.errors import TimeoutError
 
 
 async def publisher():
 
     nc = await nats.connect("nats://demo.nats.io:4222")
-    queue_group = "topic_nats"
 
     for _ in range(0, 10):
         check = randint(0, 1)

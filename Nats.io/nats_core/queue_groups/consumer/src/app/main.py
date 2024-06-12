@@ -1,5 +1,4 @@
 import asyncio
-from threading import Thread
 from src import consumers 
 
 
