@@ -9,10 +9,10 @@ from nats.errors import TimeoutError
 async def publisher():
 
     nc = await nats.connect("nats://demo.nats.io:4222")
-    
+
     async def support_request(msg):
         print(f"Received a message on '{msg.subject} {msg.reply}': {msg.data.decode()}")
-        await nc.publish(msg.reply, b'I can help')
+        await nc.publish(msg.reply, b"I can help")
 
     queue_name = "support.*"
     sub = await nc.subscribe(queue_name, cb=support_request)
@@ -22,9 +22,10 @@ async def publisher():
             queue_group = "support."
             user_id = str(uuid4())
 
-            response = await nc.request(queue_group+user_id, b'Help Me!!', timeout=0.5)
-            print("Received response: {message}".format(
-                message=response.data.decode()))
+            response = await nc.request(
+                queue_group + user_id, b"Help Me!!", timeout=0.5
+            )
+            print("Received response: {message}".format(message=response.data.decode()))
             await asyncio.sleep(0.5)
 
     except Exception as e:
