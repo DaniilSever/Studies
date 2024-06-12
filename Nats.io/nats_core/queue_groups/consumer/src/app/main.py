@@ -1,10 +1,10 @@
 import asyncio
 from threading import Thread
-from src import consumers
+from src import consumers 
 
-try:
-    for consumer in consumers:
-        Thread(target=asyncio.run(consumer)).start()
 
-except Exception as e:
-    print(str(e))
+async def run_async_application(func):
+    await asyncio.gather(*func)
+
+if __name__ == "__main__":
+    asyncio.run(run_async_application(consumers))

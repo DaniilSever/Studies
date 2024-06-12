@@ -19,16 +19,14 @@ async def publisher():
                 file_name = "".join(choices(ascii_letters + digits, k=8))
                 file_extensions = [".txt", ".zip", ".pdf", ".doc", ".docx"]
                 rand_file = file_name + file_extensions[randint(0, len(file_extensions)-1)]
-                
-                print(queue_group+rand_file, b"Test_File")
+
                 await nc.publish(queue_group+rand_file, b"Test_File")
                 await asyncio.sleep(0.5)
 
             case 1:
                 queue_group = "chat."
-                user_id = "".join(choices(ascii_lowercase, k=10))
-                
-                print(queue_group+user_id, b"Test_Message")
+                user_id = str(uuid4())
+
                 await nc.publish(queue_group+user_id, b"Test_Message")
                 await asyncio.sleep(0.5)
 
