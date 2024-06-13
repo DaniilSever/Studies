@@ -4,13 +4,19 @@ import nats
 
 async def publisher():
 
+    # nc = await nats.connect()
+
     nc = await nats.connect("nats://demo.nats.io:4222")
     js = nc.jetstream()
 
-    await js.add_stream(name="test", subjects=["test"])
+    # print(await js.streams_info())
+    # await js.delete_stream(name="Study-Push_Sub")
+
+    await js.add_stream(name="Study-Push_Sub", subjects=["study-push_sub"])
 
     for i in range(0, 10):
-        await js.publish("test", f"Test Message: {i}".encode())
+        ack = await js.publish("study-push_sub", f"Test Message: {i}".encode())
+        print(ack)
 
     await nc.drain()
 

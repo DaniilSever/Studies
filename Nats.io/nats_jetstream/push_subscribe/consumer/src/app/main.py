@@ -4,14 +4,22 @@ import nats
 
 async def consumer():
 
+    # nc = await nats.connect()
     nc = await nats.connect("nats://demo.nats.io:4222")
     js = nc.jetstream()
 
-    await js.add_stream(name="test", subjects=["test"])
+    sub = await js.subscribe("study-push_sub", ordered_consumer=True)
+    data = bytearray()
 
-    sub = await js.subscribe("test")
-    msg = await sub.next_msg()
-    await msg.ack()
+    while True:
+        try:
+            msg = await sub.next_msg()
+            data.extend(msg.data)
+        except TimeoutError:
+            break
+
+    print(data.decode())
+
 
 
 if __name__ == "__main__":

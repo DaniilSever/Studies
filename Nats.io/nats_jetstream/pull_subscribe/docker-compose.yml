@@ -37,6 +37,7 @@ services:
       - ./consumer/src:/src # code
     ports:
       - 8000:8080
+    # networks: ["nats"]
 
   publisher:
     build: 
@@ -55,7 +56,7 @@ services:
       - ./publisher/src:/src # code
     ports:
       - 9000:8080
-
+    # networks: ["nats"]
 
 networks:
   nats:
