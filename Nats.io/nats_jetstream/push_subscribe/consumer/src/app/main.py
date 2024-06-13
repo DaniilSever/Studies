@@ -4,8 +4,8 @@ import nats
 
 async def consumer():
 
-    # nc = await nats.connect()
-    nc = await nats.connect("nats://demo.nats.io:4222")
+    nc = await nats.connect("nats://0.0.0.0:4222")
+    # nc = await nats.connect("nats://demo.nats.io:4222")
     js = nc.jetstream()
 
     sub = await js.subscribe("study-push_sub", ordered_consumer=True)
