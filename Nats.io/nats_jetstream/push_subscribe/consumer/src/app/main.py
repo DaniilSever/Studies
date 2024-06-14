@@ -4,7 +4,12 @@ import nats
 
 async def consumer():
 
-    nc = await nats.connect("nats://0.0.0.0:4222")
+    nc = await nats.connect(servers=[
+        "nats://172.30.0.2:4222",
+        "nats://172.30.0.3:4222",
+        "nats://172.30.0.4:4222",
+    ])
+
     # nc = await nats.connect("nats://demo.nats.io:4222")
     js = nc.jetstream()
 

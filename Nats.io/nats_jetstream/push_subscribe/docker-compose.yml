@@ -40,7 +40,8 @@ services:
       - ./consumer/src:/src # code
     ports:
       - 8000:8080
-    networks: ["nats"]
+    networks:
+      - nats
 
   publisher:
     build: 
@@ -49,7 +50,7 @@ services:
       - nats
       - nats-1
       - nats-2
-      - consumer
+      - consumer  
     command:
       - /bin/bash
       - -c
@@ -59,8 +60,8 @@ services:
       - ./publisher/src:/src # code
     ports:
       - 9000:8080
-    networks: ["nats"]
-
+    networks:
+      - nats
 
 networks:
   nats:
