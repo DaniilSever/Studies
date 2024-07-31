@@ -1,5 +1,6 @@
 ### Мое обучение
-- Работа с RabbitMQ
-- Работа с Kafka
+- Изучение RabbitMQ
+- Изучение Kafka
+- Изучение Nats.io
 - Изучение typing.Protocol
 - ...
