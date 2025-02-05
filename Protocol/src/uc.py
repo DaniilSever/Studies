@@ -1,5 +1,6 @@
 from irep import CRUD_Protocol
 
+
 class UC:
     def __init__(self, repo: CRUD_Protocol):
         self._repo = repo
