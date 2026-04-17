@@ -12,7 +12,7 @@ class T1Var1:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-9, 10):
+        for x in range(-9, 10):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -47,7 +47,7 @@ class T1Var2:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-10, 9):
+        for x in range(-10, 9):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -82,7 +82,7 @@ class T1Var3:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-9, 6):
+        for x in range(-9, 6):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -117,7 +117,7 @@ class T1Var4:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-10, 9):
+        for x in range(-10, 9):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -149,7 +149,7 @@ class T1Var5:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-4, 11):
+        for x in range(-4, 11):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -181,7 +181,7 @@ class T1Var6:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-8, 11):
+        for x in range(-8, 11):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -216,7 +216,7 @@ class T1Var7:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-7, 12):
+        for x in range(-7, 12):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -248,7 +248,7 @@ class T1Var8:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-10, 9):
+        for x in range(-10, 9):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -280,7 +280,7 @@ class T1Var9:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-9, 8):
+        for x in range(-9, 8):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -318,7 +318,7 @@ class T1Var10:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-10, 5):
+        for x in range(-10, 5):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -350,7 +350,7 @@ class T1Var11:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-3, 6):
+        for x in range(-3, 6):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -385,7 +385,7 @@ class T1Var12:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-7, 4):
+        for x in range(-7, 4):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -420,7 +420,7 @@ class T1Var13:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-5, 10):
+        for x in range(-5, 10):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -452,7 +452,7 @@ class T1Var14:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-6, 13):
+        for x in range(-6, 13):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -484,7 +484,7 @@ class T1Var15:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-7, 4):
+        for x in range(-7, 4):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -519,7 +519,7 @@ class T1Var16:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-8, 11):
+        for x in range(-8, 11):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -554,7 +554,7 @@ class T1Var17:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-5, 6):
+        for x in range(-5, 6):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -586,7 +586,7 @@ class T1Var18:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-3, 8):
+        for x in range(-3, 8):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -621,7 +621,7 @@ class T1Var19:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-3, 8):
+        for x in range(-3, 8):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
@@ -653,7 +653,7 @@ class T1Var20:
         print("|{:^10}|{:^10}|".format("x", "y"))
         print("=" * 23)
 
-        for x in range (-4, 6):
+        for x in range(-4, 6):
             func = self.interval.get_func(x)
             if func:
                 y = func(x)
