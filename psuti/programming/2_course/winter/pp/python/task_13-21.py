@@ -1,4 +1,12 @@
+import random
+from typing import Callable
+
 # tools
+Matrix = list[list[int]]
+
+
+def read_ints() -> list[int]:
+    return list(map(int, input().split()))
 
 
 # 13) Создать матрицу из случайных чисел и вывести построчно с
