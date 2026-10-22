@@ -17,8 +17,6 @@ func toString(a []byte) string {
 	return string(a[:myStrlen(a)])
 }
 
-// Задания с 1 по 12 (Строки)
-
 // 1) Аналог strlen
 func myStrlen(a []byte) int {
 	n := 0
