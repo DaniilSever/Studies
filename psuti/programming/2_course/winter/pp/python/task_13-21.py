@@ -1,6 +1,4 @@
 import random
-import sys
-from gzip import READ
 from typing import Callable
 
 # tools
