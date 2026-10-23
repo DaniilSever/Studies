@@ -1,0 +1,9 @@
+"""Точка входа в приложение."""
+
+import sys
+
+from src.app import run
+
+
+if __name__ == "__main__":
+    sys.exit(run(sys.argv))

@@ -124,8 +124,8 @@ func task16() {
 				return
 			}
 		}
-		fmt.Fprintln(out, "yes")
 	}
+	fmt.Fprintln(out, "yes")
 }
 
 // 17) (C) Состязания - 1.
