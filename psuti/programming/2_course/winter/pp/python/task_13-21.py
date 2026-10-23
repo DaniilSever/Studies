@@ -1,24 +1,20 @@
 import random
 import sys
+from gzip import READ
 from typing import Callable
 
 # tools
 Matrix = list[list[int]]
 
 
-def read_ints() -> list[int]:
-    return list(map(int, sys.stdin.read().split()))
-
-
 class Reader:
     def __init__(self) -> None:
-        self.data: list[int] = read_ints()
-        self.pos: int = 0
+        self.buf: list[str] = []
 
     def next_int(self) -> int:
-        x: int = self.data[self.pos]
-        self.pos += 1
-        return x
+        while not self.buf:
+            self.buf = input().split()
+        return int(self.buf.pop(0))
 
     def matrix(self, n: int, m: int) -> Matrix:
         return [[self.next_int() for _ in range(m)] for _ in range(n)]
@@ -103,6 +99,17 @@ class TaskMatrix:
         - Числа, стоящие ниже этой диагонали, равны 2.
         Полученный массив выведите на экран. Числа разделяйте одним пробелом.
         """
+        n = Reader().next_int()
+        for i in range(n):
+            row: list[int] = []
+            for j in range(n):
+                if i + j == n - 1:
+                    row.append(i)
+                elif i + j < n - 1:
+                    row.append(0)
+                else:
+                    row.append(2)
+            print(" ".join(map(str, row)))
 
     def task_16(self) -> None:
         """
@@ -134,6 +141,19 @@ class TaskMatrix:
             и вывести на экран эту сумму и номер строки, для которой достигается эта сумма.
         Если таких строк несколько, то выводится номер наименьшей из них.
         """
+        r: Reader = Reader()
+        n = r.next_int()
+        m = r.next_int()
+        a: Matrix = r.matrix(n, m)
+        best_sum = -1
+        best_row = -1
+        for i in range(n):
+            s = 0
+            for j in range(m):
+                s += a[i][j]
+            if s > best_sum:
+                best_sum, best_row = s, i
+        print(best_sum, "\n", best_row)
 
     def task_18(self) -> None:
         """
@@ -146,6 +166,18 @@ class TaskMatrix:
             в которой встречается такой элемент, а если в этой строке таких элементов несколько,
             то нужно вывести минимальный номер столбца.
         """
+        r: Reader = Reader()
+        n = r.next_int()
+        m = r.next_int()
+        a: Matrix = r.matrix(n, m)
+        max_v = a[0][0]
+        mi = 0
+        mj = 0
+        for i in range(n):
+            for j in range(m):
+                if a[i][j] > max_v:
+                    max_v, mi, mj = a[i][j], i, j
+        print(max_v, mi, mj)
 
     def task_19(self) -> None:
         """
@@ -154,6 +186,22 @@ class TaskMatrix:
         Если таких несколько, то из них побеждает тот, у которого наилучшая сумма результатов по всем попыткам.
         Если и таких несколько, победителем считается спортсмен с минимальным номеров.
         """
+        r: Reader = Reader()
+        n = r.next_int()
+        m = r.next_int()
+        a: Matrix = r.matrix(n, m)
+        winner = -1
+        win_best = -1
+        win_sum = -1
+        for i in range(n):
+            best = a[i][0]
+            total = 0
+            for v in a[i]:
+                total += v
+                best = max(best, v)
+            if best > win_best or (best == win_best and total > win_sum):
+                winner, win_best, win_sum = i, best, total
+        print(winner)
 
     def task_20(self) -> None:
         """
@@ -162,6 +210,10 @@ class TaskMatrix:
         Определите количество участников состязаний, которые разделили первое место,
             то есть определите количество строк в массиве, которые содержат значение, равное наибольшему.
         """
+        r: Reader = Reader()
+        n = r.next_int()
+        m = r.next_int()
+        print(len(rows_with_max(r.matrix(n, m))))
 
     def task_21(self) -> None:
         """
@@ -170,6 +222,12 @@ class TaskMatrix:
         Сначала программа выводит количество спортсменов, показавших наилучший результат,
             затем – их номера в порядке возрастания.
         """
+        r: Reader = Reader()
+        n = r.next_int()
+        m = r.next_int()
+        rows: list[int] = rows_with_max(r.matrix(n, m))
+        print(len(rows))
+        print(" ".join(map(str, rows)))
 
 
 if __name__ == "__main__":
