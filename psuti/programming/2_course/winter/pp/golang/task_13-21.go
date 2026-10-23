@@ -118,7 +118,7 @@ func (TaskMatrix) Run() {
 
 	num := Reader{}.nextString()
 	if len(num) < 2 {
-		fmt.Println("Использование: echo <номер задачи 13-21> | go run . [или перенаправить input.txt]")
+		fmt.Println("<номер задачи 13-21>")
 		return
 	}
 	task, ok := tasks[num]

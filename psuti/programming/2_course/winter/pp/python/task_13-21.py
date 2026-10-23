@@ -1,5 +1,5 @@
 import random
-from typing import Callable
+from collections.abc import Callable
 
 # tools
 Matrix = list[list[int]]
@@ -64,7 +64,7 @@ class TaskMatrix:
 
         num = input()
         if len(num) < 2:
-            print("Использование: python3 stage2.py <номер задачи 13-21> [< input.txt]")
+            print("<номер задачи 13-21>")
             return
         task: Callable[[], None] | None = TASKS.get(num)
         if task is None:

@@ -2,7 +2,7 @@ BUF_SIZE = 256
 CStr = list[str]
 
 
-# C_tools
+# tools
 def new_str(s: str) -> CStr:
     """Создает буфер сиволов и копирует в него строку"""
     buf = ["\0"] * BUF_SIZE
