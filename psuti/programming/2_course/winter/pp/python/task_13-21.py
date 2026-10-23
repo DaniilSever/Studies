@@ -102,7 +102,7 @@ class TaskMatrix:
             row: list[int] = []
             for j in range(n):
                 if i + j == n - 1:
-                    row.append(i)
+                    row.append(1)
                 elif i + j < n - 1:
                     row.append(0)
                 else:
