@@ -1,0 +1,18 @@
+# Виртуальное окружение
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Сборка
+build/
+dist/
+*.spec
+*.nix
+
+# IDE
+.idea/
+.vscode/
