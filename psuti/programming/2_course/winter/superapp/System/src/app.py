@@ -4,8 +4,8 @@ from src.settings import APP_NAME, APP_VERSION
 from src.ui.filemanager import MainWindow
 
 
-def run(argv: list[str]) -> int:
-    app = QApplication(argv)
+def run() -> int:
+    app = QApplication([])
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(APP_VERSION)
 

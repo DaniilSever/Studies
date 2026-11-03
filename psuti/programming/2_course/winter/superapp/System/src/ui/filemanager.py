@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 )
 
 
-class MainWindow(QMainWindow):
+class FileManager(QMainWindow):
     def __init__(self, _title, _version) -> None:
         super().__init__()
         self.title = _title
