@@ -1,16 +1,118 @@
 #include "popup.h"
 #include "settings.h"
-#include <QtWidgets>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
 #include <QDir>
 #include <QFileInfo>
-PopupWindow::PopupWindow(QString host,quint16 port){setWindowTitle("Суперапп — всплывающее окно");resize(420,320);setMinimumSize(320,200);auto*c=new QWidget;auto*l=new QVBoxLayout(c);l->setContentsMargins(12,12,12,12);l->setSpacing(10);titleLabel=new QLabel("Ожидание данных...");titleLabel->setStyleSheet("font-weight:bold;font-size:13pt;color:#1f3a5f;");titleLabel->setWordWrap(true);l->addWidget(titleLabel);auto*sep=new QFrame;sep->setFrameShape(QFrame::HLine);l->addWidget(sep);form=new QFormLayout;form->setLabelAlignment(Qt::AlignRight|Qt::AlignVCenter);l->addLayout(form,1);emptyHint=new QLabel("Данные ещё не получены.");l->addWidget(emptyHint);auto*b=new QPushButton("Закрыть");connect(b,&QPushButton::clicked,this,&PopupWindow::closeRequested);l->addWidget(b,0,Qt::AlignRight);setCentralWidget(c);
- connect(&socket,&QTcpSocket::readyRead,this,&PopupWindow::parse);connect(&socket,&QTcpSocket::disconnected,this,&QWidget::close);connect(&socket,&QTcpSocket::errorOccurred,this,[this](QAbstractSocket::SocketError){if(socket.state()==QTcpSocket::UnconnectedState)close();});socket.connectToHost(host,port);}
-void PopupWindow::connectServer(){if(!socket.waitForConnected(5000))close();else show();}
-void PopupWindow::parse(){buffer+=socket.readAll();int pos;while((pos=buffer.indexOf('\n'))>=0){auto data=buffer.left(pos);buffer.remove(0,pos+1);auto doc=QJsonDocument::fromJson(data);if(!doc.isObject())continue;auto obj=doc.object();QString kind=obj.value("type").toString();if(kind=="data")applyData(obj);else if(kind=="close")close();}}
-void PopupWindow::applyData(QJsonObject obj){QString title=obj.value("title").toString("Всплывающее окно");setWindowTitle("Суперапп — "+title);titleLabel->setText(title);while(form->rowCount())form->removeRow(0);auto a=obj.value("fields").toArray();emptyHint->setVisible(a.isEmpty());if(a.isEmpty())emptyHint->setText("Данные без полей.");for(auto f:a){auto o=f.toObject();auto*value=new QLabel(o.value("value").toString());value->setWordWrap(true);value->setTextInteractionFlags(Qt::TextSelectableByMouse);form->addRow(o.value("label").toString(),value);}}
-void PopupWindow::closeRequested(){socket.write("{\"type\":\"bye\"}\n");socket.flush();close();}
-FolderPopupWindow::FolderPopupWindow(QString folder){setWindowTitle("Суперапп — "+QFileInfo(folder).fileName());resize(560,400);auto*c=new QWidget;auto*l=new QVBoxLayout(c);l->setContentsMargins(6,6,6,6);pathBar=new QLineEdit(folder);l->addWidget(pathBar);list=new QPlainTextEdit;list->setReadOnly(true);l->addWidget(list);auto*b=new QPushButton("Закрыть");connect(b,&QPushButton::clicked,this,&QWidget::close);l->addWidget(b,0,Qt::AlignRight);setCentralWidget(c);showFolder(folder);}
-void FolderPopupWindow::showFolder(QString folder){pathBar->setText(folder);QDir d(folder);if(!d.exists()){list->setPlainText("Не удалось прочитать папку:\n"+folder);return;}auto files=d.entryInfoList(QDir::AllEntries|QDir::NoDotAndDotDot|QDir::Hidden,QDir::Name);QStringList lines={folder,QString("(%1 элементов)").arg(files.size()),""};for(auto f:files)lines<<f.fileName()+(f.isDir()?"/":"");list->setPlainText(lines.join('\n'));}
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QtWidgets>
+PopupWindow::PopupWindow(QString host, quint16 port) {
+  setWindowTitle("Суперапп — всплывающее окно");
+  resize(420, 320);
+  setMinimumSize(320, 200);
+  auto *c = new QWidget;
+  auto *l = new QVBoxLayout(c);
+  l->setContentsMargins(12, 12, 12, 12);
+  l->setSpacing(10);
+  titleLabel = new QLabel("Ожидание данных...");
+  titleLabel->setStyleSheet("font-weight:bold;font-size:13pt;color:#1f3a5f;");
+  titleLabel->setWordWrap(true);
+  l->addWidget(titleLabel);
+  auto *sep = new QFrame;
+  sep->setFrameShape(QFrame::HLine);
+  l->addWidget(sep);
+  form = new QFormLayout;
+  form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  l->addLayout(form, 1);
+  emptyHint = new QLabel("Данные ещё не получены.");
+  l->addWidget(emptyHint);
+  auto *b = new QPushButton("Закрыть");
+  connect(b, &QPushButton::clicked, this, &PopupWindow::closeRequested);
+  l->addWidget(b, 0, Qt::AlignRight);
+  setCentralWidget(c);
+  connect(&socket, &QTcpSocket::readyRead, this, &PopupWindow::parse);
+  connect(&socket, &QTcpSocket::disconnected, this, &QWidget::close);
+  connect(&socket, &QTcpSocket::errorOccurred, this,
+          [this](QAbstractSocket::SocketError) {
+            if (socket.state() == QTcpSocket::UnconnectedState)
+              close();
+          });
+  socket.connectToHost(host, port);
+}
+void PopupWindow::connectServer() {
+  if (!socket.waitForConnected(5000))
+    close();
+  else
+    show();
+}
+void PopupWindow::parse() {
+  buffer += socket.readAll();
+  int pos;
+  while ((pos = buffer.indexOf('\n')) >= 0) {
+    auto data = buffer.left(pos);
+    buffer.remove(0, pos + 1);
+    auto doc = QJsonDocument::fromJson(data);
+    if (!doc.isObject())
+      continue;
+    auto obj = doc.object();
+    QString kind = obj.value("type").toString();
+    if (kind == "data")
+      applyData(obj);
+    else if (kind == "close")
+      close();
+  }
+}
+void PopupWindow::applyData(QJsonObject obj) {
+  QString title = obj.value("title").toString("Всплывающее окно");
+  setWindowTitle("Суперапп — " + title);
+  titleLabel->setText(title);
+  while (form->rowCount())
+    form->removeRow(0);
+  auto a = obj.value("fields").toArray();
+  emptyHint->setVisible(a.isEmpty());
+  if (a.isEmpty())
+    emptyHint->setText("Данные без полей.");
+  for (auto f : a) {
+    auto o = f.toObject();
+    auto *value = new QLabel(o.value("value").toString());
+    value->setWordWrap(true);
+    value->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    form->addRow(o.value("label").toString(), value);
+  }
+}
+void PopupWindow::closeRequested() {
+  socket.write("{\"type\":\"bye\"}\n");
+  socket.flush();
+  close();
+}
+FolderPopupWindow::FolderPopupWindow(QString folder) {
+  setWindowTitle("Суперапп — " + QFileInfo(folder).fileName());
+  resize(560, 400);
+  auto *c = new QWidget;
+  auto *l = new QVBoxLayout(c);
+  l->setContentsMargins(6, 6, 6, 6);
+  pathBar = new QLineEdit(folder);
+  l->addWidget(pathBar);
+  list = new QPlainTextEdit;
+  list->setReadOnly(true);
+  l->addWidget(list);
+  auto *b = new QPushButton("Закрыть");
+  connect(b, &QPushButton::clicked, this, &QWidget::close);
+  l->addWidget(b, 0, Qt::AlignRight);
+  setCentralWidget(c);
+  showFolder(folder);
+}
+void FolderPopupWindow::showFolder(QString folder) {
+  pathBar->setText(folder);
+  QDir d(folder);
+  if (!d.exists()) {
+    list->setPlainText("Не удалось прочитать папку:\n" + folder);
+    return;
+  }
+  auto files = d.entryInfoList(
+      QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden, QDir::Name);
+  QStringList lines = {folder, QString("(%1 элементов)").arg(files.size()), ""};
+  for (auto f : files)
+    lines << f.fileName() + (f.isDir() ? "/" : "");
+  list->setPlainText(lines.join('\n'));
+}
