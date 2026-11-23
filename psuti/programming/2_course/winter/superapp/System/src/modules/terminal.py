@@ -333,7 +333,7 @@ class terminal_func(terminal_ui):
       * встроенные команды — сами, прямыми системными вызовами
         (os.listdir / os.mkdir / os.rename / os.kill / чтение /proc/...):
         базовый набор (cd/pwd/ls/mkdir/rmdir/cp/mv/rm/clear/help/history/
-        echo/exit) + вариант 5, нечётный (ps/kill — управление процессами;
+        echo/exit) + вариант 1, нечётный (ps/kill — управление процессами;
         lsdev/mounts/ioports — устройства ввода/вывода);
       * прочие — через «bash -c» с захватом stdout/stderr;
       * ведёт текущий рабочий каталог (старт — корень «Суперапп»);
@@ -479,7 +479,7 @@ class terminal_func(terminal_ui):
             self._cmd_rm(args)
             return
 
-        # --- вариант 5 (нечётный): управление процессами ----------------------
+        # --- вариант 1 (нечётный): управление процессами ----------------------
         if name == "ps":
             self._cmd_ps()
             return
@@ -487,7 +487,7 @@ class terminal_func(terminal_ui):
             self._cmd_kill(args)
             return
 
-        # --- вариант 5 (нечётный): устройства ввода/вывода --------------------
+        # --- вариант 1 (нечётный): устройства ввода/вывода --------------------
         if name == "lsdev":
             self._cmd_lsdev()
             return
@@ -694,7 +694,7 @@ class terminal_func(terminal_ui):
                     kind="stderr",
                 )
 
-    # --- вариант 5 (нечётный): управление процессами (системные вызовы) ------
+    # --- вариант 1 (нечётный): управление процессами (системные вызовы) ------
     def _cmd_ps(self) -> None:
         """ps — список процессов ОС (чтение /proc/[pid]/stat — read(2))."""
         out = self.console.append_output
@@ -812,7 +812,7 @@ class terminal_func(terminal_ui):
             return
         out(cfg.MSG_T_KILLED.format(sig=sig, pid=pid), kind="info")
 
-    # --- вариант 5 (нечётный): устройства ввода/вывода (системные вызовы) ----
+    # --- вариант 1 (нечётный): устройства ввода/вывода (системные вызовы) ----
     def _cmd_lsdev(self) -> None:
         """lsdev — блочные/символьные устройства /dev (listdir/stat по /dev)."""
         out = self.console.append_output

@@ -1,15 +1,14 @@
 import json
 import os
 import pwd
-import re
+import socket
 import subprocess
 import sys
-import tempfile
 import time
 from datetime import datetime
 from typing import Optional
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+from PyQt5.QtCore import QSocketNotifier, Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import (
     QAction,
@@ -49,7 +48,7 @@ class monitoring_ui(QMainWindow):
     stop_requested = pyqtSignal()
     refresh_requested = pyqtSignal()
     save_report_requested = pyqtSignal()
-    gpu_window_requested = pyqtSignal()
+    hostname_window_requested = pyqtSignal()
     log_open_requested = pyqtSignal()
     about_requested = pyqtSignal()
     exit_requested = pyqtSignal()
@@ -80,9 +79,9 @@ class monitoring_ui(QMainWindow):
         m_mon.addAction(act("refresh", "Обновить", "F5"))
         m_mon.addSeparator()
         m_mon.addAction(act("save_report", "Сохранить отчёт...", "Ctrl+S"))
-        m_mon.addAction(act("gpu", "Информация о видеокарте", "Ctrl+G"))
+        m_mon.addAction(act("hostname", "Имя компьютера", "Ctrl+G"))
         m_mon.addAction(act("log", "Сохранить журнал ФМ...", "Ctrl+Shift+L"))
-        m_mon.addAction(act("gpu_log", "Сохранить лог видеокарты..."))
+        m_mon.addAction(act("hostname_log", "Сохранить лог компьютера..."))
         m_mon.addSeparator()
         m_mon.addAction(act("exit", "Закрыть", "Ctrl+W"))
 
@@ -104,7 +103,7 @@ class monitoring_ui(QMainWindow):
             ("stop", "Остановить"),
             ("refresh", "Обновить"),
             ("save_report", "Сохранить отчёт"),
-            ("gpu", "Видеокарта"),
+            ("hostname", "Имя компьютера"),
             ("log", "Журнал ФМ"),
         ):
             btn = QPushButton(label)
@@ -179,13 +178,16 @@ class monitoring_func(monitoring_ui):
         # {pid: (name, start_time_str)}
         self._session_started: dict[int, tuple[str, str]] = {}
 
-        # --- GPU popup (FIFO) ---
-        self._gpu_fifo: Optional[str] = None
-        self._gpu_wfd: Optional[int] = None
-        self._gpu_proc: Optional[subprocess.Popen] = None
-        self._gpu_timer = QTimer(self)
-        self._gpu_timer.setInterval(cfg.MONITORING_REFRESH_MS)
-        self._gpu_timer.timeout.connect(self._gpu_push)
+        # --- hostname popup (сокет, вар. 1) ---
+        self._srv_sock: Optional[socket.socket] = None
+        self._srv_port: Optional[int] = None
+        self._client_sock: Optional[socket.socket] = None
+        self._srv_notifier = None  # QSocketNotifier на listening-сокет
+        self._cli_notifier = None  # QSocketNotifier на клиентский сокет
+        self._hostname_proc: Optional[subprocess.Popen] = None
+        self._hostname_timer = QTimer(self)
+        self._hostname_timer.setInterval(cfg.MONITORING_REFRESH_MS)
+        self._hostname_timer.timeout.connect(self._hostname_push)
 
         self._wire_signals()
         self.set_running(False)
@@ -197,9 +199,9 @@ class monitoring_func(monitoring_ui):
         A("stop").triggered.connect(self.stop)
         A("refresh").triggered.connect(self._refresh)
         A("save_report").triggered.connect(self.save_report)
-        A("gpu").triggered.connect(self.gpu_open_popup)
+        A("hostname").triggered.connect(self.hostname_open_popup)
         A("log").triggered.connect(self.journal_save)
-        A("gpu_log").triggered.connect(self.log_save)
+        A("hostname_log").triggered.connect(self.log_save)
         A("about").triggered.connect(
             lambda: QMessageBox.about(self, "О мониторинге", cfg.ABOUT_TEXT_MONITORING)
         )
@@ -402,213 +404,229 @@ class monitoring_func(monitoring_ui):
         )
 
     # ==================================================================
-    #  Доп. функционал (п.4, item 5): информация о видеокарте
-    #  Вывод — во всплывающем окне (popup.py) через FIFO (pipe, вар. 5).
+    #  Доп. функционал (п.4, item 1): имя компьютера
+    #  Вывод — во всплывающем окне (popup.py) через сокеты (вар. 1).
     #  Обновление в реальном времени + сохранение в лог-файл.
+    #  Модель клиент/сервер: мониторинг — сервер (bind/listen/accept),
+    #  popup — клиент (connect); идентификация процесса в сети —
+    #  IP-адрес + протокол + порт.
     # ==================================================================
-    def gpu_open_popup(self) -> None:
-        """Открыть всплывающее окно с инфо о видеокарте (отдельный процесс)."""
-        if self._gpu_proc is not None and self._gpu_proc.poll() is None:
-            QMessageBox.information(self, "Видеокарта", "Окно информации уже открыто.")
+    def hostname_open_popup(self) -> None:
+        """Открыть всплывающее окно с именем компьютера (отдельный процесс)."""
+        if self._hostname_proc is not None and self._hostname_proc.poll() is None:
+            QMessageBox.information(
+                self, "Имя компьютера", "Окно информации уже открыто."
+            )
             return
-        # создаём именованный канал (вар. 5 — pipe)
-        tmp = tempfile.mkdtemp(prefix="superapp_gpu_")
-        fifo = os.path.join(tmp, "gpu.fifo")
-        try:
-            os.mkfifo(fifo)
-        except OSError as e:
-            QMessageBox.critical(self, "Видеокарта", cfg.MSG_POPUP_FAIL.format(err=e))
-            return
-        self._gpu_fifo = fifo
 
-        # запускаем popup.py отдельным процессом
+        # поднимаем серверный сокет (вар. 1 — socket)
         try:
-            self._gpu_proc = subprocess.Popen(
-                [sys.executable, cfg.POPUP_SCRIPT, fifo],
+            srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            srv.bind((cfg.POPUP_HOST, 0))  # 0 — свободный порт от ОС
+            srv.listen(1)
+            srv.setblocking(False)
+        except OSError as e:
+            QMessageBox.critical(
+                self, "Имя компьютера", cfg.MSG_POPUP_FAIL.format(err=e)
+            )
+            return
+        port = srv.getsockname()[1]
+        self._srv_sock = srv
+        self._srv_port = port
+
+        # запускаем popup.py отдельным процессом (клиент сокета)
+        try:
+            self._hostname_proc = subprocess.Popen(
+                [sys.executable, cfg.POPUP_SCRIPT, cfg.POPUP_HOST, str(port)],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
         except OSError as e:
-            QMessageBox.critical(self, "Видеокарта", cfg.MSG_POPUP_FAIL.format(err=e))
+            QMessageBox.critical(
+                self, "Имя компьютера", cfg.MSG_POPUP_FAIL.format(err=e)
+            )
+            self._hostname_cleanup()
             return
         # регистрируем PID popup как процесс приложения (чтобы мониторинг
         # его не показывал в таблице процессов)
-        self.register_app_pid(self._gpu_proc.pid)
+        self.register_app_pid(self._hostname_proc.pid)
 
-        # открываем FIFO на запись (блокирует до появления читателя)
-        try:
-            self._gpu_wfd = os.open(fifo, os.O_WRONLY)
-        except OSError as e:
-            QMessageBox.critical(self, "Видеокарта", cfg.MSG_POPUP_FAIL.format(err=e))
-            self._gpu_cleanup()
-            return
+        # следим за входящим соединением клиента (неблокирующе, по событию)
+        self._srv_notifier = QSocketNotifier(srv.fileno(), QSocketNotifier.Read)
+        self._srv_notifier.activated.connect(self._on_client_accepted)
 
-        # первая отправка + запуск периодического обновления
-        self._gpu_push()
-        self._gpu_timer.start()
+        # первая отправка (сразу после connect) + периодическое обновление
+        self._hostname_timer.start()
         self.set_status(
-            "Окно «Видеокарта» открыто (FIFO). Обновление в реальном времени."
+            f"Окно «Имя компьютера» открыто (сокет {cfg.POPUP_HOST}:{port}). "
+            "Обновление в реальном времени."
         )
 
-    def _gpu_push(self) -> None:
-        """Отправить актуальную инфо о видеокарте в popup (newline-JSON)."""
-        if self._gpu_wfd is None:
+    def _on_client_accepted(self) -> None:
+        """Клиент (popup) подключился — принимаем соединение."""
+        assert self._srv_sock is not None
+        self._srv_notifier.setEnabled(False)
+        try:
+            conn, _addr = self._srv_sock.accept()
+        except BlockingIOError:
+            self._srv_notifier.setEnabled(True)
             return
-        fields = self.gpu_collect()
-        if not fields:
-            fields = [{"label": "Ошибка", "value": cfg.MSG_GPU_UNAVAIL}]
+        except OSError:
+            self._hostname_stop()
+            return
+        conn.setblocking(False)
+        self._client_sock = conn
+        self._cli_notifier = QSocketNotifier(conn.fileno(), QSocketNotifier.Read)
+        self._cli_notifier.activated.connect(self._on_client_readable)
+
+        # сразу отправляем текущие данные
+        self._hostname_push()
+
+    def _on_client_readable(self) -> None:
+        """Клиент что-то прислал (обычно bye) или закрылся (EOF)."""
+        assert self._client_sock is not None
+        self._cli_notifier.setEnabled(False)
+        try:
+            chunk = self._client_sock.recv(4096)
+        except BlockingIOError:
+            self._cli_notifier.setEnabled(True)
+            return
+        except OSError:
+            self._hostname_stop()
+            return
+        if not chunk:
+            # EOF: popup закрылся сам -> останавливаем сервер и таймер
+            self._hostname_stop()
+            return
+        # bye-сообщение от popup: пользователь закрыл окно сам
+        data = chunk.decode("utf-8", "replace").strip()
+        if '"close"' in data or '"bye"' in data:
+            self._hostname_stop()
+            return
+        self._cli_notifier.setEnabled(True)
+
+    def _hostname_push(self) -> None:
+        """Отправить актуальную инфо в popup (newline-JSON по сокету)."""
+        if self._client_sock is None:
+            # клиент ещё не подключился — ждём accept
+            return
+        fields = self.hostname_collect()
         msg = {
             "type": "data",
-            "title": "Информация о видеокарте (вар. 5)",
+            "title": "Имя компьютера (вар. 1)",
             "fields": fields,
         }
         data = (json.dumps(msg, ensure_ascii=False) + "\n").encode("utf-8")
         try:
-            os.write(self._gpu_wfd, data)
+            self._client_sock.sendall(data)
         except OSError:
-            # popup закрылся / pipe сломан — останавливаем
-            self._gpu_stop()
+            # popup закрылся / соединение сломано — останавливаем
+            self._hostname_stop()
 
-    def gpu_collect(self) -> list[dict]:
-        """Собрать информацию о видеокарте (best-effort, несколько источников)."""
+    def hostname_collect(self) -> list[dict]:
+        """Собрать информацию об имени компьютера (несколько источников)."""
         fields: list[dict] = []
 
-        # 1) lspci — модель и PCI ID
-        model, pci_id = self._gpu_from_lspci()
-        if model:
-            fields.append({"label": "Модель", "value": model})
-        if pci_id:
-            fields.append({"label": "PCI ID", "value": pci_id})
+        # 1) имя хоста — стандартный gethostname (системный вызов)
+        try:
+            name = socket.gethostname()
+        except OSError:
+            name = ""
+        if name:
+            fields.append({"label": "Имя компьютера", "value": name})
 
-        # 2) драйвер NVIDIA + версия
-        drv = self._read_nvidia_version()
-        if drv:
-            fields.append({"label": "Драйвер", "value": drv})
+        # 2) FQDN — полностью квалифицированное имя
+        try:
+            fqdn = socket.getfqdn()
+        except OSError:
+            fqdn = ""
+        if fqdn and fqdn != name:
+            fields.append({"label": "FQDN", "value": fqdn})
 
-        # 3) nvidia-smi — загрузка/память/температура (real-time)
-        fields.extend(self._gpu_from_nvidia_smi())
+        # 3) /proc/sys/kernel/hostname — ядро Linux (чтение procfs)
+        try:
+            with open("/proc/sys/kernel/hostname", "r") as f:
+                proc_name = f.read().strip()
+            if proc_name and proc_name != name:
+                fields.append({"label": "Имя (ядро, /proc)", "value": proc_name})
+        except OSError:
+            pass
 
-        # 4) метка времени — индикатор реального обновления
+        # 4) /etc/hostname — статическое имя (чтение файла)
+        try:
+            with open("/etc/hostname", "r") as f:
+                etc_name = f.read().strip()
+            if etc_name and etc_name != name:
+                fields.append({"label": "Имя (/etc/hostname)", "value": etc_name})
+        except OSError:
+            pass
+
+        # 5) домен из /etc/resolv.conf (best-effort)
+        try:
+            with open("/etc/resolv.conf", "r") as f:
+                for line in f:
+                    if line.startswith("domain "):
+                        domain = line.split(None, 1)[1].strip()
+                        if domain:
+                            fields.append({"label": "Домен", "value": domain})
+                        break
+        except OSError:
+            pass
+
+        # 6) метка времени — индикатор реального обновления
         fields.append(
             {"label": "Обновлено", "value": datetime.now().strftime("%H:%M:%S")}
         )
 
         return fields
 
-    # --- источники данных GPU ------------------------------------------------
-    def _gpu_from_lspci(self) -> tuple[str, str]:
-        try:
-            proc = subprocess.run(
-                ["lspci", "-nn"], capture_output=True, text=True, timeout=5
-            )
-        except (OSError, subprocess.TimeoutExpired):
-            return "", ""
-        model, pci_id = "", ""
-        for line in proc.stdout.splitlines():
-            if re.search(
-                r"\b(VGA compatible controller|3D controller|Display controller)\b",
-                line,
-            ):
-                # "..." [1234:5678]
-                m = re.search(r"\[([0-9a-fA-F]{4}:[0-9a-fA-F]{4})\]\s*(.*)$", line)
-                if m:
-                    pci_id = m.group(1)
-                # текст модели — всё после ':'
-                if ":" in line:
-                    model = (
-                        line.split(":", 2)[2].strip() if line.count(":") >= 2 else ""
-                    )
-                if model:
-                    # убираем квадратные скобки с id из модели, если остались
-                    model = re.sub(
-                        r"\s*\[[0-9a-fA-F]{4}:[0-9a-fA-F]{4}\]", "", model
-                    ).strip()
-                break
-        return model, pci_id
-
-    @staticmethod
-    def _read_nvidia_version() -> str:
-        path = "/proc/driver/nvidia/version"
-        if os.path.exists(path):
+    # --- остановка hostname popup --------------------------------------------
+    def _hostname_stop(self) -> None:
+        if self._client_sock is not None:
             try:
-                with open(path, "r") as f:
-                    first = f.readline().strip()
-                return first
-            except OSError:
-                pass
-        return ""
-
-    @staticmethod
-    def _gpu_from_nvidia_smi() -> list[dict]:
-        try:
-            proc = subprocess.run(
-                [
-                    "nvidia-smi",
-                    "--query-gpu=memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu",
-                    "--format=csv,noheader,nounits",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-        except (OSError, subprocess.TimeoutExpired):
-            return []
-        if proc.returncode != 0 or not proc.stdout.strip():
-            return []
-        parts = [p.strip() for p in proc.stdout.strip().split(",")]
-        labels = [
-            "Память всего, МБ",
-            "Память занято, МБ",
-            "Память свободно, МБ",
-            "Загрузка GPU, %",
-            "Температура, °C",
-        ]
-        out = []
-        for label, val in zip(labels, parts):
-            out.append({"label": label, "value": val})
-        return out
-
-    # --- остановка GPU popup -------------------------------------------------
-    def _gpu_stop(self) -> None:
-        if self._gpu_wfd is not None:
-            try:
-                os.write(
-                    self._gpu_wfd,
-                    (json.dumps({"type": "close"}) + "\n").encode("utf-8"),
+                self._client_sock.sendall(
+                    (json.dumps({"type": "close"}) + "\n").encode("utf-8")
                 )
             except OSError:
                 pass
-        self._gpu_timer.stop()
-        self._gpu_cleanup()
+        self._hostname_timer.stop()
+        self._hostname_cleanup()
 
-    def _gpu_cleanup(self) -> None:
-        if self._gpu_wfd is not None:
+    def _hostname_cleanup(self) -> None:
+        if self._cli_notifier is not None:
+            self._cli_notifier.setEnabled(False)
+            self._cli_notifier = None
+        if self._client_sock is not None:
             try:
-                os.close(self._gpu_wfd)
+                self._client_sock.close()
             except OSError:
                 pass
-            self._gpu_wfd = None
-        if self._gpu_proc is not None:
+            self._client_sock = None
+        if self._srv_notifier is not None:
+            self._srv_notifier.setEnabled(False)
+            self._srv_notifier = None
+        if self._srv_sock is not None:
             try:
-                self._gpu_proc.wait(timeout=1)
+                self._srv_sock.close()
+            except OSError:
+                pass
+            self._srv_sock = None
+            self._srv_port = None
+        if self._hostname_proc is not None:
+            try:
+                self._hostname_proc.wait(timeout=1)
             except subprocess.TimeoutExpired:
-                self._gpu_proc.terminate()
-            if self._gpu_proc.pid in self._app_pids:
-                self.unregister_app_pid(self._gpu_proc.pid)
-            self._gpu_proc = None
-        if self._gpu_fifo and os.path.exists(self._gpu_fifo):
-            try:
-                os.unlink(self._gpu_fifo)
-                os.rmdir(os.path.dirname(self._gpu_fifo))
-            except OSError:
-                pass
-            self._gpu_fifo = None
+                self._hostname_proc.terminate()
+            if self._hostname_proc.pid in self._app_pids:
+                self.unregister_app_pid(self._hostname_proc.pid)
+            self._hostname_proc = None
 
     # ==================================================================
     #  Лог-файлы (Задание 4: возможность сохранения полученных данных)
     #  * журнал файлового менеджера — «информация о посещениях и
     #    параметрах посещений ФМ» (куда заходил, что создавал/удалял);
-    #  * лог видеокарты — снимок текущих параметров GPU.
+    #  * лог компьютера — снимок текущих параметров (имя хоста и т.п.).
     # ==================================================================
     def journal_save(self) -> None:
         """Сохранить журнал файлового менеджера (посещения и операции).
@@ -674,28 +692,28 @@ class monitoring_func(monitoring_ui):
         )
 
     def log_save(self) -> None:
-        """Сохранить лог видеокарты (снимок параметров GPU)."""
+        """Сохранить лог компьютера (снимок параметров: имя хоста и т.п.)."""
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Сохранить лог (видеокарта)",
+            "Сохранить лог (имя компьютера)",
             os.path.join(
                 cfg.APP_ROOT,
-                "gpu_log_{}.txt".format(datetime.now().strftime("%Y%m%d_%H%M%S")),
+                "hostname_log_{}.txt".format(datetime.now().strftime("%Y%m%d_%H%M%S")),
             ),
             "Текстовые файлы (*.txt);;Все файлы (*)",
         )
         if not path:
             return
-        fields = self.gpu_collect()
+        fields = self.hostname_collect()
         try:
             with open(path, "w", encoding="utf-8") as f:
-                f.write("Лог «Суперапп» — информация о видеокарте\n")
+                f.write("Лог «Суперапп» — информация о компьютере (имя хоста)\n")
                 f.write(
                     "Время: {}\n".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 )
                 f.write("----------------------------------------\n")
                 if not fields:
-                    f.write(cfg.MSG_GPU_UNAVAIL + "\n")
+                    f.write(cfg.MSG_HOSTNAME_UNAVAIL + "\n")
                 else:
                     for fld in fields:
                         f.write("{}: {}\n".format(fld["label"], fld["value"]))
@@ -708,7 +726,7 @@ class monitoring_func(monitoring_ui):
     #  Завершение
     # ==================================================================
     def closeEvent(self, event) -> None:
-        self._gpu_stop()
+        self._hostname_stop()
         self._timer.stop()
         super().closeEvent(event)
 
