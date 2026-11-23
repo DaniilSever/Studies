@@ -27,9 +27,9 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-_HERE = os.path.dirname(os.path.abspath(__file__))  # .../src/modules
-_SRC = os.path.dirname(_HERE)  # .../src
-_PKG_ROOT = os.path.dirname(_SRC)  # .../ (System)
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SRC = os.path.dirname(_HERE)
+_PKG_ROOT = os.path.dirname(_SRC)
 for _p in (_PKG_ROOT, _SRC):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -62,7 +62,7 @@ class monitoring_ui(QMainWindow):
         self._build_menu()
         self._build_central()
 
-    # --- меню ----------------------------------------------------------------
+    # --- меню ---
     def _build_menu(self) -> None:
         mb: QMenuBar = self.menuBar()
 
@@ -88,7 +88,7 @@ class monitoring_ui(QMainWindow):
         m_help = mb.addMenu("Справка")
         m_help.addAction(act("about", "О мониторинге", "F1"))
 
-    # --- центральная область ------------------------------------------------
+    # --- центральная область ---
     def _build_central(self) -> None:
         central = QWidget()
         lay = QVBoxLayout(central)
@@ -132,7 +132,7 @@ class monitoring_ui(QMainWindow):
 
         self.setCentralWidget(central)
 
-    # --- публичный API для func ---------------------------------------------
+    # --- публичный API для func ---
     def set_rows(self, rows: list[tuple]) -> None:
         """rows: список кортежей (pid, name, user, start, state)."""
         self.table.setRowCount(0)
@@ -153,7 +153,6 @@ class monitoring_ui(QMainWindow):
         A("stop").setEnabled(running)
 
 
-# ====================== [class monitoring_func] =============================
 class monitoring_func(monitoring_ui):
     """Логика мониторинга поверх UI.
 
@@ -192,7 +191,7 @@ class monitoring_func(monitoring_ui):
         self._wire_signals()
         self.set_running(False)
 
-    # --- сигналы UI -> логика ------------------------------------------------
+    # --- сигналы UI -> логика ---
     def _wire_signals(self) -> None:
         A = self._actions.__getitem__
         A("start").triggered.connect(self.start)
@@ -207,9 +206,6 @@ class monitoring_func(monitoring_ui):
         )
         A("exit").triggered.connect(self.close)
 
-    # ==================================================================
-    #  Управление мониторингом
-    # ==================================================================
     def start(self) -> None:
         self._baseline_pids = self._enumerate_pids()
         self._session_started.clear()
@@ -225,16 +221,13 @@ class monitoring_func(monitoring_ui):
         self.set_running(False)
         self.set_status("Мониторинг остановлен")
 
-    # --- регистрация процессов приложения (для app.py) ----------------------
+    # --- регистрация процессов приложения (для app.py) ---
     def register_app_pid(self, pid: int) -> None:
         self._app_pids.add(pid)
 
     def unregister_app_pid(self, pid: int) -> None:
         self._app_pids.discard(pid)
 
-    # ==================================================================
-    #  Чтение /proc
-    # ==================================================================
     def _refresh(self) -> None:
         rows, new_pids = self._collect_processes()
         self.set_rows(rows)
@@ -296,7 +289,7 @@ class monitoring_func(monitoring_ui):
         start = self._start_time_str(stat["starttime"])
         return {"name": name, "user": user, "start": start, "state": stat["state"]}
 
-    # --- низкоуровневое чтение /proc/[pid]/* --------------------------------
+    # --- низкоуровневое чтение /proc/[pid]/* ---
     def _read_stat(self, pid: int) -> Optional[dict]:
         path = f"{cfg.MONITORING_PROC_ROOT}/{pid}/stat"
         try:
@@ -366,9 +359,6 @@ class monitoring_func(monitoring_ui):
         start_epoch = self._boot_epoch() + starttime_ticks / cfg.MONITORING_CLK_TCK
         return datetime.fromtimestamp(start_epoch).strftime("%H:%M:%S")
 
-    # ==================================================================
-    #  Отчёт (Задание 3): процессы, запущенные во время работы «Суперапп»
-    # ==================================================================
     def save_report(self) -> None:
         if not self._session_started:
             QMessageBox.information(self, "Отчёт", cfg.MSG_NO_REPORT)
@@ -403,14 +393,6 @@ class monitoring_func(monitoring_ui):
             cfg.MSG_REPORT_SAVED.format(path=path, n=len(self._session_started)),
         )
 
-    # ==================================================================
-    #  Доп. функционал (п.4, item 1): имя компьютера
-    #  Вывод — во всплывающем окне (popup.py) через сокеты (вар. 1).
-    #  Обновление в реальном времени + сохранение в лог-файл.
-    #  Модель клиент/сервер: мониторинг — сервер (bind/listen/accept),
-    #  popup — клиент (connect); идентификация процесса в сети —
-    #  IP-адрес + протокол + порт.
-    # ==================================================================
     def hostname_open_popup(self) -> None:
         """Открыть всплывающее окно с именем компьютера (отдельный процесс)."""
         if self._hostname_proc is not None and self._hostname_proc.poll() is None:
@@ -581,7 +563,7 @@ class monitoring_func(monitoring_ui):
 
         return fields
 
-    # --- остановка hostname popup --------------------------------------------
+    # --- остановка hostname popup ---
     def _hostname_stop(self) -> None:
         if self._client_sock is not None:
             try:
@@ -622,12 +604,6 @@ class monitoring_func(monitoring_ui):
                 self.unregister_app_pid(self._hostname_proc.pid)
             self._hostname_proc = None
 
-    # ==================================================================
-    #  Лог-файлы (Задание 4: возможность сохранения полученных данных)
-    #  * журнал файлового менеджера — «информация о посещениях и
-    #    параметрах посещений ФМ» (куда заходил, что создавал/удалял);
-    #  * лог компьютера — снимок текущих параметров (имя хоста и т.п.).
-    # ==================================================================
     def journal_save(self) -> None:
         """Сохранить журнал файлового менеджера (посещения и операции).
 
@@ -722,16 +698,12 @@ class monitoring_func(monitoring_ui):
             return
         QMessageBox.information(self, "Лог-файл", cfg.MSG_LOG_SAVED.format(path=path))
 
-    # ==================================================================
-    #  Завершение
-    # ==================================================================
     def closeEvent(self, event) -> None:
         self._hostname_stop()
         self._timer.stop()
         super().closeEvent(event)
 
 
-# ============================ [def main] =====================================
 def main(argv: list[str]) -> int:
     """Точка входа: мониторинг как отдельный процесс.
 

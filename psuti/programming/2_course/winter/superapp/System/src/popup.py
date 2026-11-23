@@ -76,9 +76,6 @@ class PopupWindow(QMainWindow):
 
         self.setCentralWidget(central)
 
-    # ======================================================================
-    #  Подключение к серверу (главному окну)
-    # ======================================================================
     def connect_to_server(self) -> bool:
         """Подключиться к серверному сокету главного окна.
 
@@ -99,9 +96,6 @@ class PopupWindow(QMainWindow):
         self._notifier.activated.connect(self._on_ready_read)
         return True
 
-    # ======================================================================
-    #  Чтение из сокета (неблокирующее, по событию)
-    # ======================================================================
     def _on_ready_read(self) -> None:
         assert self._sock is not None
         # выключаем нотификатор на время обработки, чтобы избежать рекурсии
@@ -142,7 +136,6 @@ class PopupWindow(QMainWindow):
             try:
                 msg = json.loads(line.decode("utf-8"))
             except (json.JSONDecodeError, UnicodeDecodeError):
-                # битое сообщение игнорируем, но не падаем
                 continue
             self._handle_message(msg)
 
@@ -152,11 +145,7 @@ class PopupWindow(QMainWindow):
             self._apply_data(msg)
         elif kind == "close":
             self._on_close_requested()
-        # неизвестные типы молча игнорируем
 
-    # ======================================================================
-    #  Применение данных к окну
-    # ======================================================================
     def _apply_data(self, msg: dict) -> None:
         title = msg.get("title") or "Всплывающее окно"
         self.setWindowTitle(f"Суперапп — {title}")
@@ -179,16 +168,12 @@ class PopupWindow(QMainWindow):
             self.empty_hint.setText("Данные без полей.")
             self.empty_hint.setVisible(True)
 
-    # ======================================================================
-    #  Закрытие / потеря сервера
-    # ======================================================================
     def _on_disconnect(self) -> None:
         """Главный процесс закрыл/потерял сокет — закрываемся (зависимость)."""
         self._cleanup()
         QApplication.quit()
 
     def _on_close_requested(self) -> None:
-        # уведомляем сервер (best-effort), что клиент уходит сам
         if self._sock is not None:
             try:
                 self._sock.sendall((json.dumps({"type": "bye"}) + "\n").encode("utf-8"))

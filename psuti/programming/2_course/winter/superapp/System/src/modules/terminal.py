@@ -26,8 +26,8 @@ from PyQt5.QtWidgets import (
 )
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_SRC = os.path.dirname(_HERE)  # .../src
-_PKG_ROOT = os.path.dirname(_SRC)  # .../ (System)
+_SRC = os.path.dirname(_HERE)
+_PKG_ROOT = os.path.dirname(_SRC)
 for _p in (_PKG_ROOT, _SRC):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -41,7 +41,6 @@ def _fmt(color: QColor) -> QTextCharFormat:
     return f
 
 
-# ======================= [class terminal_ui] ================================
 class _Console(QPlainTextEdit):
     """Консольный виджет (xterm-стиль).
 
@@ -79,7 +78,7 @@ class _Console(QPlainTextEdit):
 
         self._append_prompt(initial=True)
 
-    # --- публичный API для func ---------------------------------------------
+    # --- публичный API для func ---
     def set_prompt(self, prompt: str) -> None:
         self._prompt = prompt
 
@@ -118,7 +117,7 @@ class _Console(QPlainTextEdit):
         self._append_prompt()
         self.set_busy(False)
 
-    # --- внутреннее: рисование ---------------------------------------------
+    # --- внутреннее: рисование ---
     def _append_prompt(self, *, initial: bool = False) -> None:
         if not initial:
             self._insert_text("\n", QColor(cfg.TERMINAL_COL_FG))
@@ -156,7 +155,7 @@ class _Console(QPlainTextEdit):
             c.setPosition(start)
             self.setTextCursor(c)
 
-    # --- клавиатура: общее поведение консоли --------------------------------
+    # --- клавиатура: общее поведение консоли ---
     def keyPressEvent(self, e: QKeyEvent) -> None:
         if self._busy:
             if e.key() == Qt.Key_C and (e.modifiers() & Qt.ControlModifier):
@@ -223,7 +222,7 @@ class _Console(QPlainTextEdit):
 
         super().keyPressEvent(e)
 
-    # --- история команд -----------------------------------------------------
+    # --- история команд ---
     def _submit(self) -> None:
         cmd = self._current_input()
         c = self.textCursor()
@@ -257,7 +256,7 @@ class _Console(QPlainTextEdit):
     def _history_reset(self) -> None:
         self._hist_idx = len(self._history)
 
-    # --- история для func (чтение) -----------------------------------------
+    # --- история для func (чтение) ---
     def command_history(self) -> list[str]:
         return list(self._history)
 
@@ -274,7 +273,7 @@ class terminal_ui(QMainWindow):
         self._build_menu()
         self._build_central()
 
-    # --- меню ----------------------------------------------------------------
+    # --- меню ---
     def _build_menu(self) -> None:
         mb: QMenuBar = self.menuBar()
 
@@ -296,7 +295,7 @@ class terminal_ui(QMainWindow):
         m_help = mb.addMenu("Справка")
         m_help.addAction(act("help", "Справка по командам", "F1"))
 
-    # --- центральная область ------------------------------------------------
+    # --- центральная область ---
     def _build_central(self) -> None:
         central = QWidget()
         lay = QVBoxLayout(central)
@@ -306,7 +305,7 @@ class terminal_ui(QMainWindow):
         lay.addWidget(self.console)
         self.setCentralWidget(central)
 
-    # --- публичный API (проброс к консоли) ----------------------------------
+    # --- публичный API (проброс к консоли) ---
     def set_prompt(self, prompt: str) -> None:
         self.console.set_prompt(prompt)
 
@@ -351,7 +350,7 @@ class terminal_func(terminal_ui):
         self._wire_signals()
         self._initial_view()
 
-    # --- первичный экран -----------------------------------------------------
+    # --- первичный экран ---
     def _initial_view(self) -> None:
         # баннер сверху, затем приглашение
         self.console.clear()
@@ -359,7 +358,7 @@ class terminal_func(terminal_ui):
         self._render_prompt()
         self.console.new_prompt()
 
-    # --- сигналы UI -> логика ------------------------------------------------
+    # --- сигналы UI -> логика ---
     def _wire_signals(self) -> None:
         c = self.console
         c.command_submitted.connect(self._on_command)
@@ -372,7 +371,7 @@ class terminal_func(terminal_ui):
         A("close").triggered.connect(self.close)
         A("help").triggered.connect(lambda: self.console.show_help(cfg.HELP_TEXT))
 
-    # --- приглашение ---------------------------------------------------------
+    # --- приглашение ---
     def _render_prompt(self) -> None:
         # короткий путь: корень «Суперапп» показываем как ~
         root = os.path.abspath(cfg.SUPERAPP_ROOT)
@@ -459,7 +458,7 @@ class terminal_func(terminal_ui):
                 out("{i:>4}  {h}\n".format(i=i, h=h))
             return
 
-        # --- файловые операции (сисколлы) ------------------------------------
+        # --- файловые операции (сисколлы) ---
         if name == "ls":
             self._cmd_ls(args)
             return
@@ -478,16 +477,12 @@ class terminal_func(terminal_ui):
         if name == "rm":
             self._cmd_rm(args)
             return
-
-        # --- вариант 1 (нечётный): управление процессами ----------------------
         if name == "ps":
             self._cmd_ps()
             return
         if name == "kill":
             self._cmd_kill(args)
             return
-
-        # --- вариант 1 (нечётный): устройства ввода/вывода --------------------
         if name == "lsdev":
             self._cmd_lsdev()
             return
@@ -498,7 +493,7 @@ class terminal_func(terminal_ui):
             self._cmd_ioports()
             return
 
-    # --- встроенные команды: файловые операции (системные вызовы) ------------
+    # --- встроенные команды: файловые операции (системные вызовы) ---
     def _cmd_ls(self, args: list[str]) -> None:
         """ls [ПУТЬ] — список файлов каталога (os.listdir + os.stat)."""
         out = self.console.append_output
@@ -694,7 +689,6 @@ class terminal_func(terminal_ui):
                     kind="stderr",
                 )
 
-    # --- вариант 1 (нечётный): управление процессами (системные вызовы) ------
     def _cmd_ps(self) -> None:
         """ps — список процессов ОС (чтение /proc/[pid]/stat — read(2))."""
         out = self.console.append_output
@@ -812,7 +806,6 @@ class terminal_func(terminal_ui):
             return
         out(cfg.MSG_T_KILLED.format(sig=sig, pid=pid), kind="info")
 
-    # --- вариант 1 (нечётный): устройства ввода/вывода (системные вызовы) ----
     def _cmd_lsdev(self) -> None:
         """lsdev — блочные/символьные устройства /dev (listdir/stat по /dev)."""
         out = self.console.append_output
@@ -921,7 +914,7 @@ class terminal_func(terminal_ui):
                 "(код возврата: {})\n".format(proc.returncode), kind="info"
             )
 
-    # --- путь ---------------------------------------------------------------
+    # --- путь ---
     def _resolve_path(self, target: str) -> str:
         # ~ -> корень «Суперапп»; ~/<x> -> корень/<x>
         root = os.path.abspath(cfg.SUPERAPP_ROOT)
@@ -933,7 +926,7 @@ class terminal_func(terminal_ui):
             return os.path.normpath(target)
         return os.path.normpath(os.path.join(self._cwd, target))
 
-    # --- прерывание / EOF ----------------------------------------------------
+    # --- прерывание / EOF ---
     def _on_interrupt(self) -> None:
         # ^C уже напечатан консолью; просто вернуть приглашение
         self._after_command_prompt()
