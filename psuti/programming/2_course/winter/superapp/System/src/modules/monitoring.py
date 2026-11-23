@@ -199,7 +199,7 @@ class monitoring_func(monitoring_ui):
         A("gpu").triggered.connect(self.gpu_open_popup)
         A("log").triggered.connect(self.log_save)
         A("about").triggered.connect(
-            lambda: QMessageBox.about(self, "О мониторинге", cfg.ABOUT_TEXT)
+            lambda: QMessageBox.about(self, "О мониторинге", cfg.ABOUT_TEXT_MONITORING)
         )
         A("exit").triggered.connect(self.close)
 

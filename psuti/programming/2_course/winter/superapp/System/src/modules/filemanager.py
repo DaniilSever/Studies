@@ -832,11 +832,7 @@ class filemanager_func(filemanager_ui):
         QMessageBox.about(
             self,
             "О программе",
-            "Суперапп — файловый менеджер.\n"
-            "Курсовая работа по ОСиО.\n"
-            "Вариант 5 (каналы, процессы ОС, GPU).\n"
-            "Язык: Python + PyQt5.\n"
-            "Разработчик: 【ФИО, группа】",
+            cfg.ABOUT_TEXT_FILEMANAGER,
         )
 
     def _show_hotkeys(self) -> None:
