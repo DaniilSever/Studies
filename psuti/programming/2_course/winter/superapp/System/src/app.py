@@ -28,7 +28,6 @@ def run(argv: list[str]) -> int:
 
     win = filemanager_func()
     start_path = cfg.SUPERAPP_ROOT
-    # опциональный аргумент: стартовый каталог (например, для отладки)
     if len(argv) > 1 and os.path.isdir(argv[1]):
         start_path = argv[1]
     win.navigate(start_path)

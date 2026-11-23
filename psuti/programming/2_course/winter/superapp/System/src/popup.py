@@ -67,9 +67,6 @@ class PopupWindow(QMainWindow):
 
         self.setCentralWidget(central)
 
-    # ======================================================================
-    #  Открытие FIFO
-    # ======================================================================
     def open_pipe(self) -> None:
         """Открыть FIFO на чтение (неблокирующе). FIFO создаёт главный процесс."""
         # O_NONBLOCK: open не виснет, если писателя ещё нет
@@ -78,9 +75,6 @@ class PopupWindow(QMainWindow):
         self._notifier = QSocketNotifier(fd, QSocketNotifier.Read)
         self._notifier.activated.connect(self._on_ready_read)
 
-    # ======================================================================
-    #  Чтение из FIFO (неблокирующее, по событию)
-    # ======================================================================
     def _on_ready_read(self) -> None:
         assert self._fd is not None
         # выключаем нотификатор на время обработки, чтобы избежать рекурсии
@@ -121,7 +115,6 @@ class PopupWindow(QMainWindow):
             try:
                 msg = json.loads(line.decode("utf-8"))
             except (json.JSONDecodeError, UnicodeDecodeError):
-                # битое сообщение игнорируем, но не падаем
                 continue
             self._handle_message(msg)
 
@@ -131,11 +124,7 @@ class PopupWindow(QMainWindow):
             self._apply_data(msg)
         elif kind == "close":
             self._on_close_requested()
-        # неизвестные типы молча игнорируем
 
-    # ======================================================================
-    #  Применение данных к окну
-    # ======================================================================
     def _apply_data(self, msg: dict) -> None:
         title = msg.get("title") or "Всплывающее окно"
         self.setWindowTitle(f"Суперапп — {title}")
@@ -158,9 +147,6 @@ class PopupWindow(QMainWindow):
             self.empty_hint.setText("Данные без полей.")
             self.empty_hint.setVisible(True)
 
-    # ======================================================================
-    #  Закрытие / EOF
-    # ======================================================================
     def _on_eof(self) -> None:
         """Главный процесс закрыл/потерял FIFO — закрываемся (зависимость)."""
         self._cleanup()

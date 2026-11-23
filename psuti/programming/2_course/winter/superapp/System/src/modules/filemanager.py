@@ -27,11 +27,9 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-# --- sys.path: чтобы `import src.settings` работал при запуске этого файла
-# отдельным процессом (python .../src/modules/filemanager.py)
-_HERE = os.path.dirname(os.path.abspath(__file__))  # .../src/modules
-_SRC = os.path.dirname(_HERE)  # .../src
-_PKG_ROOT = os.path.dirname(_SRC)  # .../ (System)
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SRC = os.path.dirname(_HERE)
+_PKG_ROOT = os.path.dirname(_SRC)
 for _p in (_PKG_ROOT, _SRC):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -114,13 +112,7 @@ class FolderListWidget(QListWidget):
             event.ignore()
 
     def dropEvent(self, event) -> None:
-        # super() не вызываем: стандартный перенос просто переставил бы
-        # плитки внутри списка, а нам нужна операция над файлами
         mime = event.mimeData()
-        # внутренний перенос узнаём по формату Qt item views: внешние
-        # приложения его не присылают, а source() в PyQt может вернуться
-        # другой обёрткой того же объекта — на identity-сравнение
-        # полагаться нельзя
         internal = event.source() is self or mime.hasFormat(
             "application/x-qabstractitemmodeldatalist"
         )
@@ -391,7 +383,6 @@ class filemanager_ui(QMainWindow):
         self._actions["up"].setEnabled(can_up)
 
 
-# ==================== [class filemanager_func] ==============================
 class filemanager_func(filemanager_ui):
     """Логика файлового менеджера поверх UI.
 
@@ -422,7 +413,7 @@ class filemanager_func(filemanager_ui):
         self._wire_signals()
         self._update_nav()
 
-    # --- журнал посещений и операций ФМ (Лог-файл, Задание) -----------------
+    # --- журнал посещений и операций ФМ (Лог-файл, Задание) ---
     def _journal(self, action: str, details: str) -> None:
         """Записать событие в журнал посещений/операций ФМ.
 
@@ -441,7 +432,7 @@ class filemanager_func(filemanager_ui):
         except OSError:
             pass  # журнал вспомогательный — не прерываем работу ФМ
 
-    # --- подключение сигналов UI -> логика ----------------------------------
+    # --- подключение сигналов UI -> логика ---
     def _wire_signals(self) -> None:
         A = self._actions.__getitem__
 
@@ -965,7 +956,6 @@ class filemanager_func(filemanager_ui):
         path = item.data(cfg.FILEMANAGER_ROLE_PATH) or ""
         kind = item.data(cfg.FILEMANAGER_ROLE_KIND)
         protected = bool(item.data(cfg.FILEMANAGER_ROLE_PROTECTED))
-        # Ctrl зажат? — определяем через глобальное состояние клавиатуры
         ctrl = bool(QApplication.queryKeyboardModifiers() & Qt.ControlModifier)
 
         if protected:
@@ -1190,7 +1180,6 @@ class filemanager_func(filemanager_ui):
 
 
 if __name__ == "__main__":
-    # запуск одного файлового менеджера для отладки
     app = QApplication(sys.argv)
     app.setApplicationName("Суперапп")
     os.makedirs(cfg.TRASH_PATH, exist_ok=True)
