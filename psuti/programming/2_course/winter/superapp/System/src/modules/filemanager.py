@@ -5,14 +5,13 @@ import sys
 import time
 from typing import Optional
 
-from PyQt5.QtCore import QSize, Qt, pyqtSignal
+from PyQt5.QtCore import QFileInfo, QMimeData, QSize, Qt, QUrl, pyqtSignal
 from PyQt5.QtGui import QIcon, QKeySequence
 from PyQt5.QtWidgets import (
     QAction,
     QApplication,
     QDialog,
     QDialogButtonBox,
-    QFileIconProvider,
     QInputDialog,
     QLabel,
     QLineEdit,
@@ -40,6 +39,123 @@ for _p in (_PKG_ROOT, _SRC):
 import src.settings as cfg
 
 
+class FolderListWidget(QListWidget):
+    """Список-плитки с поддержкой Drag and Drop (Задание 3).
+
+    Поддерживаются два вида перетаскивания:
+    - внутреннее: плитку «Суперапп» тянут на другую папку или на фон
+      (операция «переместить»);
+    - внешнее: файлы перетаскивают из файлового менеджера ОС
+      (операция «копировать»).
+
+    Сам виджет файлов не трогает: он лишь превращает сброс в сигнал
+    paths_dropped(пути, целевая_папка, из_приложения), а реальное
+    перемещение выполняет filemanager_func._on_paths_dropped.
+    """
+
+    paths_dropped = pyqtSignal(list, str, bool)  # (пути, цель, из «Суперапп»?)
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self._apply_dnd()
+        self.current_dir: str = ""  # цель сброса «на фон»
+
+    def _apply_dnd(self) -> None:
+        """Включить перетаскивание плиток и приём сбросов.
+
+        Отдельный метод, потому что setMovement(Static) (её вызывает
+        _build_central, чтобы плитки нельзя было сдвинуть визуально)
+        в Qt заодно сбрасывает dragEnabled и переключает режим
+        в DropOnly — без повторного включения тянуть плитки нельзя.
+        """
+        self.setDragEnabled(True)  # плитки можно тянуть
+        self.setAcceptDrops(True)  # и на них можно бросать
+        self.viewport().setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(QListWidget.DragDrop)
+
+    def setMovement(self, movement) -> None:
+        """После смены movement восстановить настройки Drag and Drop."""
+        super().setMovement(movement)
+        self._apply_dnd()
+
+    # --- что отдаём при перетаскивании наружу ---
+    def mimeData(self, items):
+        """Mime-данные перетаскивания с URL файлов.
+
+        Фирменный формат Qt (x-qabstractitemmodeldatalist) понимают
+        только Qt-приложения, поэтому добавляем обычные URL — благодаря
+        им плитки можно перетаскивать и в ОС, а собственный
+        drop-обработчик получает пути источников из mime-данных.
+        """
+        mime = super().mimeData(items)
+        if mime is None:
+            mime = QMimeData()
+        urls = []
+        for it in items:
+            p = it.data(cfg.FILEMANAGER_ROLE_PATH)
+            if p:
+                urls.append(QUrl.fromLocalFile(p))
+        if urls:
+            mime.setUrls(urls)
+        return mime
+
+    # --- приём перетаскивания ---
+    def dragEnterEvent(self, event) -> None:
+        if self._is_supported(event):
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event) -> None:
+        if self._is_supported(event):
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event) -> None:
+        # super() не вызываем: стандартный перенос просто переставил бы
+        # плитки внутри списка, а нам нужна операция над файлами
+        mime = event.mimeData()
+        # внутренний перенос узнаём по формату Qt item views: внешние
+        # приложения его не присылают, а source() в PyQt может вернуться
+        # другой обёрткой того же объекта — на identity-сравнение
+        # полагаться нельзя
+        internal = event.source() is self or mime.hasFormat(
+            "application/x-qabstractitemmodeldatalist"
+        )
+        sources = [u.toLocalFile() for u in mime.urls() if u.isLocalFile()]
+        if internal and not sources:
+            for it in self.selectedItems():
+                p = it.data(cfg.FILEMANAGER_ROLE_PATH)
+                if p:
+                    sources.append(p)
+        target = self._drop_target(event.pos())
+        if sources and target:
+            event.setDropAction(Qt.MoveAction if internal else Qt.CopyAction)
+            event.accept()
+            self.paths_dropped.emit(sources, target, internal)
+        else:
+            event.ignore()
+
+    # --- утилиты события ---
+    def _is_supported(self, event) -> bool:
+        """Внутреннее перетаскивание плиток или внешние URL файлов."""
+        mime = event.mimeData()
+        return (
+            event.source() is self
+            or mime.hasUrls()
+            or mime.hasFormat("application/x-qabstractitemmodeldatalist")
+        )
+
+    def _drop_target(self, pos) -> str:
+        """Цель: папка под курсором либо текущий каталог (сброс на фон)."""
+        item = self.itemAt(pos)
+        if item is not None and item.data(cfg.FILEMANAGER_ROLE_KIND) == "dir":
+            return item.data(cfg.FILEMANAGER_ROLE_PATH)
+        return self.current_dir
+
+
 class filemanager_ui(QMainWindow):
     """Интерфейс Файлового менеджера"""
 
@@ -61,7 +177,13 @@ class filemanager_ui(QMainWindow):
         self.resize(*cfg.FILEMANAGER_SIZE)
 
         self._actions: dict[str, QAction] = {}
-        self._icon_provider = QFileIconProvider()
+        self._custom_folder_icon: Optional[QIcon] = None
+        self._custom_file_icon: Optional[QIcon] = None
+        _folder_url = getattr(cfg, "FILEMANAGER_FOLDER_ICON_URL", "")
+        _file_url = getattr(cfg, "FILEMANAGER_FILE_ICON_URL", "")
+        if _folder_url or _file_url:
+            self._custom_folder_icon = QIcon(_folder_url)
+            self._custom_file_icon = QIcon(_file_url)
 
         self._build_actions()
         self._build_menubar()
@@ -141,6 +263,13 @@ class filemanager_ui(QMainWindow):
         act("back", "Назад", "Alt+Left", st.standardIcon(QStyle.SP_ArrowLeft))
         act("forward", "Вперёд", "Alt+Right", st.standardIcon(QStyle.SP_ArrowRight))
         act("up", "Вверх", "Alt+Up", st.standardIcon(QStyle.SP_ArrowUp))
+        act(
+            "removable",
+            "Съёмные носители...",
+            "",
+            st.standardIcon(QStyle.SP_DriveHDIcon),
+            tip="Подключённые к ОС съёмные носители",
+        )
 
         # Справка
         act("hotkeys", "Горячие клавиши", "F1")
@@ -181,6 +310,8 @@ class filemanager_ui(QMainWindow):
         m_go.addAction(A("back"))
         m_go.addAction(A("forward"))
         m_go.addAction(A("up"))
+        m_go.addSeparator()
+        m_go.addAction(A("removable"))
 
         m_term = mb.addMenu("Терминал")
         m_term.addAction(A("open_terminal"))
@@ -219,7 +350,7 @@ class filemanager_ui(QMainWindow):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
 
-        self.list = QListWidget()
+        self.list = FolderListWidget()
         self.list.setViewMode(QListWidget.IconMode)
         self.list.setIconSize(QSize(*cfg.FILEMANAGER_ICON_SIZE))
         self.list.setGridSize(QSize(*cfg.FILEMANAGER_GRID_SIZE))
@@ -280,6 +411,8 @@ class filemanager_func(filemanager_ui):
         self._show_hidden: bool = False
         # буфер обмена для вырезать/копировать: (операция, путь)
         self._clip: list[tuple[str, str]] = []
+        # корни съёмных носителей (чтобы «Вверх» не уводил из них в ОС)
+        self._removable_roots: set[str] = set()
 
         self._wire_signals()
         self._update_nav()
@@ -292,9 +425,13 @@ class filemanager_func(filemanager_ui):
         A("back").triggered.connect(self._go_back)
         A("forward").triggered.connect(self._go_forward)
         A("up").triggered.connect(self._go_up)
+        A("removable").triggered.connect(self._open_removable)
         A("refresh").triggered.connect(self._reload)
         self.path_bar.returnPressed.connect(self._on_path_entered)
         self.list.itemDoubleClicked.connect(self._on_item_double_clicked)
+
+        # Drag and Drop: виджет сообщил о сбросе — выполняем перенос
+        self.list.paths_dropped.connect(self._on_paths_dropped)
 
         # операции над файлами
         A("new_folder").triggered.connect(self._new_folder)
@@ -327,9 +464,6 @@ class filemanager_func(filemanager_ui):
         A("about").triggered.connect(self._show_about)
         A("hotkeys").triggered.connect(self._show_hotkeys)
 
-    # ==================================================================
-    #  Навигация
-    # ==================================================================
     def navigate(self, path: str, *, push_history: bool = True) -> bool:
         """Перейти в каталог path. Возвращает True при успехе."""
         path = os.path.abspath(path)
@@ -374,6 +508,9 @@ class filemanager_func(filemanager_ui):
         # не поднимаемся выше корня «Суперапп»
         if cur == os.path.abspath(cfg.SUPERAPP_ROOT):
             return
+        # и выше корня съёмного носителя (не выходим в ОС через «Вверх»)
+        if cur in self._removable_roots:
+            return
         up = os.path.dirname(cur) or "/"
         self.navigate(up)
 
@@ -398,10 +535,8 @@ class filemanager_func(filemanager_ui):
             can_up=can_up,
         )
 
-    # ==================================================================
-    #  Заполнение плиток
-    # ==================================================================
     def _populate(self, path: str) -> None:
+        self.list.current_dir = path  # цель Drag and Drop «на фон»
         self.list.clear()
         try:
             entries = os.listdir(path)
@@ -429,18 +564,18 @@ class filemanager_func(filemanager_ui):
             self.list.addItem(item)
 
     def _icon_for(self, path: str, is_dir: bool) -> QIcon:
-        # системная иконка через QFileIconProvider (как в Thunar)
-        from PyQt5.QtCore import QFileInfo
-
-        return self._icon_provider.icon(QFileInfo(path))
+        if (
+            is_dir
+            and self._custom_folder_icon is not None
+            and not self._custom_folder_icon.isNull()
+        ):
+            return self._custom_folder_icon
+        return self._custom_file_icon
 
     def _toggle_hidden(self) -> None:
         self._show_hidden = self._actions["toggle_hidden"].isChecked()
         self._reload()
 
-    # ==================================================================
-    #  Выбранный элемент
-    # ==================================================================
     def _selected_item(self) -> Optional[QListWidgetItem]:
         items = self.list.selectedItems()
         return items[0] if items else None
@@ -448,9 +583,6 @@ class filemanager_func(filemanager_ui):
     def _current_dir(self) -> str:
         return os.path.abspath(self.path_bar.text().strip() or cfg.SUPERAPP_ROOT)
 
-    # ==================================================================
-    #  Создание папок и файлов
-    # ==================================================================
     def _new_folder(self) -> None:
         """Ctrl+Shift+N — создать папку (запрос имени через диалог)."""
         name, ok = QInputDialog.getText(
@@ -492,9 +624,6 @@ class filemanager_func(filemanager_ui):
         self._reload()
         return True
 
-    # ==================================================================
-    #  Переименование / удаление / свойства
-    # ==================================================================
     def _rename(self) -> None:
         """F2 — переименовать выбранный элемент."""
         item = self._selected_item()
@@ -630,9 +759,6 @@ class filemanager_func(filemanager_ui):
     def _stamp() -> str:
         return time.strftime("%H%M%S")
 
-    # ==================================================================
-    #  Вырезать / Копировать / Вставить
-    # ==================================================================
     def _clip_set(self, op: str) -> None:
         items = self.list.selectedItems()
         if not items:
@@ -671,9 +797,64 @@ class filemanager_func(filemanager_ui):
             self._clip = []
         self._reload()
 
-    # ==================================================================
-    #  Поиск (Задание 3: во вложенных папках «Суперапп»)
-    # ==================================================================
+    def _on_paths_dropped(self, paths: list, target_dir: str, from_app: bool) -> None:
+        """Перетаскивание: переместить объекты «Суперапп» / скопировать извне.
+
+        Внутренние перетаскивания перемещают объекты (плитку на папку или
+        на фон), внешние — копируют внутрь «Суперапп». Папка System и
+        Корзина в корне не участвуют ни как источник, ни как приёмник.
+        """
+        if not paths or not target_dir:
+            return
+        target_dir = os.path.abspath(target_dir)
+
+        # приёмник: внутрь System ничего помещать нельзя
+        app_root = os.path.abspath(cfg.APP_ROOT)
+        if target_dir == app_root or target_dir.startswith(app_root + os.sep):
+            self._error(cfg.MSG_DND_DROP_SYSTEM)
+            return
+
+        # источники: System/Корзина перетаскивать нельзя (как и переименовывать)
+        if from_app:
+            allowed = [
+                p
+                for p in paths
+                if os.path.basename(p.rstrip(os.sep)) not in cfg.PROTECTED_NAMES
+                and os.path.basename(p.rstrip(os.sep)) != cfg.TRASH_FOLDER
+            ]
+            if not allowed:
+                self._error(cfg.MSG_SYSTEM_PROTECTED.format(name=cfg.SYSTEM_FOLDER))
+                return
+            paths = allowed
+
+        for src in paths:
+            src = os.path.abspath(src)
+            if not os.path.exists(src):
+                continue  # объект уже исчез (например, второй перенос)
+            # перекладывание папки саму в себя лишено смысла
+            if os.path.abspath(src) == target_dir:
+                continue
+            if from_app and os.path.dirname(src) == target_dir:
+                continue
+            # внутрь собственного содержимого папку не кладём
+            if os.path.isdir(src) and target_dir.startswith(src + os.sep):
+                continue
+
+            name = os.path.basename(src.rstrip(os.sep))
+            dst = os.path.join(target_dir, name)
+            if os.path.exists(dst):
+                dst = os.path.join(target_dir, f"{name} ({self._stamp()})")
+            try:
+                if from_app:
+                    shutil.move(src, dst)
+                elif os.path.isdir(src):
+                    shutil.copytree(src, dst)
+                else:
+                    shutil.copy2(src, dst)
+            except OSError as e:
+                self._error(cfg.MSG_DND_MOVE_FAIL.format(name=name, err=e))
+        self._reload()
+
     def _do_search(self, pattern: str) -> list[str]:
         """Рекурсивный поиск по подстроке от корня «Суперапп»."""
         pattern = pattern.strip().lower()
@@ -727,9 +908,6 @@ class filemanager_func(filemanager_ui):
         lw.itemDoubleClicked.connect(_open_found)
         dlg.exec_()
 
-    # ==================================================================
-    #  Открытие элементов
-    # ==================================================================
     def _on_item_double_clicked(self, item: QListWidgetItem) -> None:
         path = item.data(cfg.FILEMANAGER_ROLE_PATH) or ""
         kind = item.data(cfg.FILEMANAGER_ROLE_KIND)
@@ -825,9 +1003,112 @@ class filemanager_func(filemanager_ui):
         except OSError as e:
             self._error(f"Не удалось открыть мониторинг:\n{e}")
 
-    # ==================================================================
-    #  Справка / О программе
-    # ==================================================================
+    @staticmethod
+    def _list_removable() -> list[tuple[str, str, str]]:
+        """Съёмные носители, подключённые к ОС.
+
+        Читается таблица монтирования ядра (/proc/mounts, запасной
+        вариант — /etc/mtab). Съёмным считается носитель с «настоящей»
+        файловой системой, смонтированный под /media, /run/media или
+        /mnt, либо подключённый как usb-/mmc-устройство. Возвращает
+        список кортежей (точка монтирования, устройство, файловая система).
+        """
+        real_fs = {
+            "vfat",
+            "exfat",
+            "ntfs",
+            "ntfs3",
+            "fuseblk",
+            "ext2",
+            "ext3",
+            "ext4",
+            "btrfs",
+            "f2fs",
+            "xfs",
+            "iso9660",
+            "udf",
+        }
+        lines: list[str] = []
+        for mtab in ("/proc/mounts", "/etc/mtab"):
+            try:
+                with open(mtab, encoding="utf-8") as f:
+                    lines = f.readlines()
+                break
+            except OSError:
+                continue
+        if not lines:
+            return []
+
+        found: dict[str, tuple[str, str, str]] = {}
+        for line in lines:
+            parts = line.split()
+            if len(parts) < 3:
+                continue
+            dev, mount, fstype = parts[0], parts[1], parts[2]
+            # восьмеричные последовательности в точке монтирования
+            mount = mount.replace("\\040", " ").replace("\\011", "\t")
+            if fstype not in real_fs:
+                continue  # proc, sysfs, tmpfs и прочие псевдоФС
+            if mount == "/" or mount.startswith("/boot"):
+                continue  # системные разделы
+            if dev.startswith("/dev/loop") or dev.startswith("/dev/ram"):
+                continue  # циклические и RAM-устройства
+            is_removable = (
+                mount.startswith("/media/")
+                or mount.startswith("/run/media/")
+                or mount.startswith("/mnt/")
+                or dev.startswith("/dev/mmcblk")
+                or dev.startswith("/dev/usb")
+            )
+            if is_removable:
+                found[mount] = (mount, dev, fstype)
+        return sorted(found.values())
+
+    def _open_removable(self) -> None:
+        """Переход → Съёмные носители...: диалог со списком носителей.
+
+        Носители есть — двойной клик открывает выбранный в основном окне;
+        носителей нет — сообщение об ошибке (по заданию).
+        """
+        devices = self._list_removable()
+        self._removable_roots = {os.path.abspath(m) for m, _, _ in devices}
+        if not devices:
+            self._error(cfg.MSG_NO_REMOVABLE)
+            return
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Съёмные носители")
+        dlg.resize(480, 260)
+        lay = QVBoxLayout(dlg)
+        lay.addWidget(
+            QLabel(
+                "Подключённые съёмные носители.\nДвойной клик — открыть в основном окне:"
+            )
+        )
+        lw = QListWidget()
+        lay.addWidget(lw, 1)
+        btns = QDialogButtonBox(QDialogButtonBox.Close)
+        btns.rejected.connect(dlg.reject)
+        btns.clicked.connect(dlg.reject)
+        lay.addWidget(btns)
+
+        for mount, dev, fstype in devices:
+            it = QListWidgetItem(
+                self._icon_for(mount, True),
+                f"{mount}\n{dev}  [{fstype}]",
+            )
+            it.setData(cfg.FILEMANAGER_ROLE_PATH, mount)
+            lw.addItem(it)
+
+        def _open_device(cur: QListWidgetItem) -> None:
+            path = cur.data(cfg.FILEMANAGER_ROLE_PATH)
+            if path and os.path.isdir(path):
+                self.navigate(path)
+                dlg.accept()
+
+        lw.itemDoubleClicked.connect(_open_device)
+        dlg.exec_()
+
     def _show_about(self) -> None:
         QMessageBox.about(
             self,
@@ -848,9 +1129,6 @@ class filemanager_func(filemanager_ui):
             text = f"Не удалось сформировать справку:\n{e}"
         QMessageBox.information(self, "Горячие клавиши", text)
 
-    # ==================================================================
-    #  Утилиты
-    # ==================================================================
     def _error(self, message: str) -> None:
         QMessageBox.critical(self, "Суперапп", message)
 
@@ -858,7 +1136,6 @@ class filemanager_func(filemanager_ui):
         QMessageBox.information(self, "Суперапп", message)
 
 
-# ============================ [def test_app] =================================
 if __name__ == "__main__":
     # запуск одного файлового менеджера для отладки
     app = QApplication(sys.argv)

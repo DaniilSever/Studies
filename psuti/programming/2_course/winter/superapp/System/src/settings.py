@@ -1,4 +1,5 @@
 import os
+from re import M
 
 from PyQt5.QtCore import Qt
 
@@ -41,6 +42,16 @@ MSG_TRASH_FAIL = "Не удалось переместить в корзину �
 MSG_NO_SELECTION = "Сначала выберите элемент в списке."
 MSG_DELETE_CONFIRM = "Удалить «{name}» безвозвратно?"
 MSG_PASTE_FAIL = "Не удалось вставить «{name}»:\n{err}"
+
+MSG_DND_DROP_SYSTEM = "Папка «System» защищена:\nпомещать объекты внутрь неё нельзя."
+MSG_DND_MOVE_FAIL = "Не удалось переместить «{name}»:\n{err}"
+
+# --- Съёмные носители ---
+MSG_NO_REMOVABLE = (
+    "Съёмные носители не обнаружены.\n"
+    "Подключите носитель (USB-флеш-накопитель, CD/DVD)\n"
+    "и повторите попытку."
+)
 
 MSG_BAD_DIR = "cd: нет такого каталога: {path}\n"
 MSG_CD_NOTDIR = "cd: {path} не является каталогом\n"
@@ -107,8 +118,10 @@ REPORT_LINE = "{name:30}  {start}\n"
 # ----------------- Файловый менеджер -----------------
 FILEMANAGER_TITLE = "Суперапп"
 FILEMANAGER_SIZE = (800, 600)
-FILEMANAGER_ICON_SIZE = (48, 48)
-FILEMANAGER_GRID_SIZE = (110, 90)
+FILEMANAGER_FOLDER_ICON_URL = os.path.join(MODULES_DIR, "assets", "folder-icon.png")
+FILEMANAGER_FILE_ICON_URL = os.path.join(MODULES_DIR, "assets", "file-icon.png")
+FILEMANAGER_ICON_SIZE = (64, 64)
+FILEMANAGER_GRID_SIZE = (150, 150)
 
 FILEMANAGER_MENU = ["Файл", "Правка", "Вид", "Переход", "Терминал", "Справка"]
 
