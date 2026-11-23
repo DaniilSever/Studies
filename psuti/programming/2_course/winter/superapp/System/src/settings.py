@@ -9,8 +9,10 @@ MODULES_DIR = os.path.join(SRC_DIR, "modules")
 
 # --- Файлы модулей ---
 TERMINAL_SCRIPT = os.path.join(MODULES_DIR, "terminal.py")
+MONITORING_SCRIPT = os.path.join(MODULES_DIR, "monitoring.py")
 POPUP_SCRIPT = os.path.join(SRC_DIR, "popup.py")
 FILEMANAGER_SCRIPT = os.path.join(MODULES_DIR, "filemanager.py")
+
 
 # --- Среда «Суперапп» (корневая папка-среда) ---
 SUPERAPP_ROOT = os.path.dirname(os.path.abspath(APP_ROOT))
@@ -29,6 +31,16 @@ MSG_SYSTEM_PROTECTED = (
 MSG_OPEN_ERROR = "Не удалось открыть «{name}»:\n{err}"
 MSG_NO_SUCH_PATH = "Путь не существует: {path}"
 MSG_NOT_A_DIR = "Это не папка: {path}"
+MSG_EXISTS = "«{name}» уже существует в этой папке."
+MSG_BAD_NAME = "Недопустимое имя: «{name}»"
+MSG_PROTECTED_NAME = "Имя «{name}» зарезервировано системой.\nВыберите другое имя."
+MSG_CREATE_FAIL = "Не удалось создать «{name}»:\n{err}"
+MSG_RENAME_FAIL = "Не удалось переименовать «{name}»:\n{err}"
+MSG_DELETE_FAIL = "Не удалось удалить «{name}»:\n{err}"
+MSG_TRASH_FAIL = "Не удалось переместить в корзину «{name}»:\n{err}"
+MSG_NO_SELECTION = "Сначала выберите элемент в списке."
+MSG_DELETE_CONFIRM = "Удалить «{name}» безвозвратно?"
+MSG_PASTE_FAIL = "Не удалось вставить «{name}»:\n{err}"
 
 MSG_BAD_DIR = "cd: нет такого каталога: {path}\n"
 MSG_CD_NOTDIR = "cd: {path} не является каталогом\n"
@@ -72,7 +84,7 @@ ABOUT_TEXT = (
     "IPC всплывающих окон — именованные каналы (FIFO).\n"
     "Доп. функционал: информация о видеокарте (п.4, item 5).\n"
     "Язык: Python + PyQt5.\n"
-    "Разработчик: 【ФИО, группа】"
+    "Разработчик: Ипатов Даниил Артемович, ИВТ-52зу"
 )
 
 REPORT_HEADER = (

@@ -1,4 +1,3 @@
-import errno
 import json
 import os
 import pwd
@@ -28,6 +27,13 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+_HERE = os.path.dirname(os.path.abspath(__file__))  # .../src/modules
+_SRC = os.path.dirname(_HERE)  # .../src
+_PKG_ROOT = os.path.dirname(_SRC)  # .../ (System)
+for _p in (_PKG_ROOT, _SRC):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import src.settings as cfg
 
@@ -638,6 +644,7 @@ class monitoring_func(monitoring_ui):
         super().closeEvent(event)
 
 
+# ============================ [def main] =====================================
 def main(argv: list[str]) -> int:
     """Точка входа: мониторинг как отдельный процесс.
 

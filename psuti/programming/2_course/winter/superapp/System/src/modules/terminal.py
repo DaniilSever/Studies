@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 import shlex
 import subprocess
@@ -25,6 +23,13 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_SRC = os.path.dirname(_HERE)  # .../src
+_PKG_ROOT = os.path.dirname(_SRC)  # .../ (System)
+for _p in (_PKG_ROOT, _SRC):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 import src.settings as cfg
 
 
@@ -34,6 +39,7 @@ def _fmt(color: QColor) -> QTextCharFormat:
     return f
 
 
+# ======================= [class terminal_ui] ================================
 class _Console(QPlainTextEdit):
     """Консольный виджет (xterm-стиль).
 
