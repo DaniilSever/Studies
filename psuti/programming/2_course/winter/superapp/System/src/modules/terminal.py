@@ -1,7 +1,9 @@
 import os
 import shlex
+import signal
 import subprocess
 import sys
+import time
 from typing import Optional
 
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -328,7 +330,11 @@ class terminal_func(terminal_ui):
     """Логика терминала поверх UI.
 
     Подключает сигналы консоли к разбору и выполнению команд:
-      * встроенные команды (cd/pwd/clear/help/history/echo/exit) — сами;
+      * встроенные команды — сами, прямыми системными вызовами
+        (os.listdir / os.mkdir / os.rename / os.kill / чтение /proc/...):
+        базовый набор (cd/pwd/ls/mkdir/rmdir/cp/mv/rm/clear/help/history/
+        echo/exit) + вариант 5, нечётный (ps/kill — управление процессами;
+        lsdev/mounts/ioports — устройства ввода/вывода);
       * прочие — через «bash -c» с захватом stdout/stderr;
       * ведёт текущий рабочий каталог (старт — корень «Суперапп»);
       * рендерит приглашение с путём.
@@ -452,6 +458,436 @@ class terminal_func(terminal_ui):
             for i, h in enumerate(hist, 1):
                 out("{i:>4}  {h}\n".format(i=i, h=h))
             return
+
+        # --- файловые операции (сисколлы) ------------------------------------
+        if name == "ls":
+            self._cmd_ls(args)
+            return
+        if name == "mkdir":
+            self._cmd_mkdir(args)
+            return
+        if name == "rmdir":
+            self._cmd_rmdir(args)
+            return
+        if name == "cp":
+            self._cmd_cp(args)
+            return
+        if name == "mv":
+            self._cmd_mv(args)
+            return
+        if name == "rm":
+            self._cmd_rm(args)
+            return
+
+        # --- вариант 5 (нечётный): управление процессами ----------------------
+        if name == "ps":
+            self._cmd_ps()
+            return
+        if name == "kill":
+            self._cmd_kill(args)
+            return
+
+        # --- вариант 5 (нечётный): устройства ввода/вывода --------------------
+        if name == "lsdev":
+            self._cmd_lsdev()
+            return
+        if name == "mounts":
+            self._cmd_mounts()
+            return
+        if name == "ioports":
+            self._cmd_ioports()
+            return
+
+    # --- встроенные команды: файловые операции (системные вызовы) ------------
+    def _cmd_ls(self, args: list[str]) -> None:
+        """ls [ПУТЬ] — список файлов каталога (os.listdir + os.stat)."""
+        out = self.console.append_output
+        target = args[0] if args else self._cwd
+        path = self._resolve_path(target)
+        try:
+            entries = os.listdir(path)  # getdents64
+        except OSError as e:
+            out(cfg.MSG_T_SYSCALL.format(cmd="ls", err=e) + "\n", kind="stderr")
+            return
+        # папки впереди файлов, каждая с пометкой типа и размером (stat)
+        try:
+            entries.sort(key=lambda n: (not os.path.isdir(os.path.join(path, n)), n))
+        except OSError:
+            entries.sort()
+        for n in entries:
+            full = os.path.join(path, n)
+            try:
+                st = os.stat(full)  # stat
+                if os.path.isdir(full):
+                    out("{name:<28} <DIR>\n".format(name=n))
+                else:
+                    out("{name:<28} {size:>10}\n".format(name=n, size=st.st_size))
+            except OSError:
+                # объект исчез между listdir и stat — просто имя
+                out("{name}\n".format(name=n))
+
+    def _cmd_mkdir(self, args: list[str]) -> None:
+        """mkdir ПУТЬ... — создать каталог(и) (os.mkdir)."""
+        out = self.console.append_output
+        if not args:
+            out(cfg.MSG_T_NOARGS.format(cmd="mkdir"), kind="stderr")
+            return
+        for target in args:
+            path = self._resolve_path(target)
+            try:
+                os.mkdir(path)  # mkdir(2)
+            except FileExistsError:
+                out(cfg.MSG_T_EXISTS.format(cmd="mkdir", path=target), kind="stderr")
+            except OSError as e:
+                out(
+                    cfg.MSG_T_CANTCREATE.format(cmd="mkdir", path=target, err=e) + "\n",
+                    kind="stderr",
+                )
+
+    def _cmd_rmdir(self, args: list[str]) -> None:
+        """rmdir ПУТЬ... — удалить пустой каталог (os.rmdir)."""
+        out = self.console.append_output
+        if not args:
+            out(cfg.MSG_T_NOARGS.format(cmd="rmdir"), kind="stderr")
+            return
+        for target in args:
+            path = self._resolve_path(target)
+            try:
+                os.rmdir(path)  # rmdir(2)
+            except FileNotFoundError:
+                out(cfg.MSG_T_NOENT.format(cmd="rmdir", path=target), kind="stderr")
+            except OSError as e:
+                out(
+                    cfg.MSG_T_CANTDEL.format(cmd="rmdir", path=target, err=e) + "\n",
+                    kind="stderr",
+                )
+
+    @staticmethod
+    def _copy_recursive(src: str, dst: str) -> None:
+        """Копирование файла/каталога сисколлами: open/read/write/mkdir."""
+        if os.path.isdir(src):
+            os.mkdir(dst)
+            for entry in os.listdir(src):
+                _src = os.path.join(src, entry)
+                _dst = os.path.join(dst, entry)
+                terminal_func._copy_recursive(_src, _dst)
+        else:
+            with open(src, "rb") as fsrc, open(dst, "xb") as fdst:
+                while True:
+                    chunk = fsrc.read(65536)  # read(2)
+                    if not chunk:
+                        break
+                    fdst.write(chunk)  # write(2)
+
+    def _cmd_cp(self, args: list[str]) -> None:
+        """cp ИСТ ДСТ — копировать файл/каталог (open/read/write, -R)."""
+        out = self.console.append_output
+        if len(args) < 2:
+            out(cfg.MSG_T_TWOARGS.format(cmd="cp"), kind="stderr")
+            return
+        src = self._resolve_path(args[0])
+        dst = self._resolve_path(args[1])
+        # несколько источников -> последний аргумент обязан быть каталогом
+        if len(args) > 2:
+            if not os.path.isdir(dst):
+                out(
+                    "{cmd}: {path}: назначение должно быть каталогом\n".format(
+                        cmd="cp", path=args[-1]
+                    ),
+                    kind="stderr",
+                )
+                return
+            pairs = [
+                (
+                    self._resolve_path(a),
+                    os.path.join(dst, os.path.basename(a.rstrip("/"))),
+                )
+                for a in args[:-1]
+            ]
+        else:
+            new_dst = (
+                os.path.join(dst, os.path.basename(src.rstrip("/")))
+                if os.path.isdir(dst)
+                else dst
+            )
+            pairs = [(src, new_dst)]
+        for s, d in pairs:
+            if not os.path.exists(s):
+                out(cfg.MSG_T_NOENT.format(cmd="cp", path=s), kind="stderr")
+                continue
+            if os.path.exists(d):
+                out(cfg.MSG_T_EXISTS.format(cmd="cp", path=d), kind="stderr")
+                continue
+            try:
+                self._copy_recursive(s, d)
+            except OSError as e:
+                out(
+                    cfg.MSG_T_CANTCOPY.format(cmd="cp", src=s, dst=d, err=e) + "\n",
+                    kind="stderr",
+                )
+
+    def _cmd_mv(self, args: list[str]) -> None:
+        """mv ИСТ ДСТ — переместить/переименовать (os.rename)."""
+        out = self.console.append_output
+        if len(args) < 2:
+            out(cfg.MSG_T_TWOARGS.format(cmd="mv"), kind="stderr")
+            return
+        src = self._resolve_path(args[0])
+        dst = self._resolve_path(args[1])
+        if os.path.isdir(dst):
+            dst = os.path.join(dst, os.path.basename(src.rstrip("/")))
+        if not os.path.exists(src):
+            out(cfg.MSG_T_NOENT.format(cmd="mv", path=args[0]), kind="stderr")
+            return
+        try:
+            os.rename(src, dst)  # rename(2)
+        except OSError as e:
+            out(
+                cfg.MSG_T_CANTMOVE.format(cmd="mv", src=src, dst=dst, err=e) + "\n",
+                kind="stderr",
+            )
+
+    def _cmd_rm(self, args: list[str]) -> None:
+        """rm [-r] ПУТЬ... — удалить файл (unlink) или каталог (rmdir/-r)."""
+        out = self.console.append_output
+        recursive = False
+        targets = list(args)
+        if targets and targets[0] == "-r":
+            recursive = True
+            targets = targets[1:]
+        if not targets:
+            out(cfg.MSG_T_NOARGS.format(cmd="rm"), kind="stderr")
+            return
+
+        def _rmtree(path: str) -> None:
+            # рекурсивное удаление: unlink для файлов, rmdir для каталогов
+            if os.path.isdir(path):
+                for entry in os.listdir(path):
+                    _rmtree(os.path.join(path, entry))
+                os.rmdir(path)
+            else:
+                os.unlink(path)  # unlink(2)
+
+        for target in targets:
+            path = self._resolve_path(target)
+            if not os.path.lexists(path):
+                out(cfg.MSG_T_NOENT.format(cmd="rm", path=target), kind="stderr")
+                continue
+            try:
+                if os.path.isdir(path):
+                    if not recursive:
+                        try:
+                            os.rmdir(path)  # сработает только если пуст
+                        except OSError:
+                            out(
+                                cfg.MSG_T_DIRNONEMPTY.format(cmd="rm", path=target),
+                                kind="stderr",
+                            )
+                            continue
+                    else:
+                        _rmtree(path)
+                else:
+                    os.unlink(path)
+            except OSError as e:
+                out(
+                    cfg.MSG_T_CANTDEL.format(cmd="rm", path=target, err=e) + "\n",
+                    kind="stderr",
+                )
+
+    # --- вариант 5 (нечётный): управление процессами (системные вызовы) ------
+    def _cmd_ps(self) -> None:
+        """ps — список процессов ОС (чтение /proc/[pid]/stat — read(2))."""
+        out = self.console.append_output
+        out(
+            cfg.MSG_T_PS_HDR.format(
+                pid="PID", user="USER", state="S", start="START", name="NAME"
+            ),
+            kind="info",
+        )
+        n = 0
+        for pid in sorted(self._proc_pids()):
+            row = self._proc_row(pid)
+            if row is None:
+                continue
+            out(row)
+            n += 1
+        if n == 0:
+            out(cfg.MSG_T_PS_EMPTY, kind="info")
+
+    @staticmethod
+    def _proc_pids() -> list[int]:
+        try:
+            return sorted(int(e) for e in os.listdir("/proc") if e.isdigit())
+        except OSError:
+            return []
+
+    def _proc_row(self, pid: int) -> Optional[str]:
+        """Строка таблицы ps для одного процесса (аналог _read_stat мониторинга)."""
+        try:
+            with open("/proc/{pid}/stat".format(pid=pid), "r") as f:
+                data = f.read()
+        except OSError:
+            return None
+        rp = data.rfind(")")
+        if rp == -1:
+            return None
+        comm = data[data.find("(") + 1 : rp]
+        rest = data[rp + 2 :].split()
+        state = rest[0] if rest else "?"
+        try:
+            starttime = int(rest[19]) if len(rest) > 19 else 0
+        except ValueError:
+            starttime = 0
+        user = "-"
+        try:
+            with open("/proc/{pid}/status".format(pid=pid), "r") as f:
+                for line in f:
+                    if line.startswith("Uid:"):
+                        parts = line.split()
+                        uid = int(parts[1]) if len(parts) > 1 else -1
+                        if uid >= 0:
+                            import pwd as _pwd
+
+                            user = _pwd.getpwuid(uid).pw_name
+                        break
+        except (OSError, ValueError, KeyError):
+            pass
+        start = self._proc_start_str(starttime)
+        return cfg.MSG_T_PS_HDR.format(
+            pid=pid, user=user, state=state, start=start, name=comm
+        )
+
+    @staticmethod
+    def _proc_start_str(starttime_ticks: int) -> str:
+        if starttime_ticks <= 0:
+            return "?"
+        try:
+            with open("/proc/uptime", "r") as f:
+                uptime = float(f.read().split()[0])
+            boot = time.time() - uptime
+            from datetime import datetime
+
+            return datetime.fromtimestamp(
+                boot + starttime_ticks / os.sysconf(os.sysconf_names["SC_CLK_TCK"])
+            ).strftime("%H:%M:%S")
+        except (OSError, ValueError):
+            return "?"
+
+    def _cmd_kill(self, args: list[str]) -> None:
+        """kill PID [СИГ] — отправить сигнал процессу (os.kill)."""
+        out = self.console.append_output
+        if not args:
+            out(cfg.MSG_T_NOARGS.format(cmd="kill"), kind="stderr")
+            return
+        sig = signal.SIGTERM
+        if len(args) > 1:
+            try:
+                sig = int(args[1])
+            except ValueError:
+                out(
+                    "{cmd}: {sig}: неверный номер сигнала\n".format(
+                        cmd="kill", sig=args[1]
+                    ),
+                    kind="stderr",
+                )
+                return
+        try:
+            pid = int(args[0])
+        except ValueError:
+            out(cfg.MSG_T_BADPID.format(pid=args[0]), kind="stderr")
+            return
+        try:
+            os.kill(pid, sig)  # kill(2)
+        except ProcessLookupError:
+            out(cfg.MSG_T_KILLED_ESRCH.format(pid=pid), kind="stderr")
+            return
+        except PermissionError:
+            out(cfg.MSG_T_NOPERM.format(pid=pid), kind="stderr")
+            return
+        except OSError as e:
+            out(
+                cfg.MSG_T_SYSCALL.format(cmd="kill", err=e) + "\n",
+                kind="stderr",
+            )
+            return
+        out(cfg.MSG_T_KILLED.format(sig=sig, pid=pid), kind="info")
+
+    # --- вариант 5 (нечётный): устройства ввода/вывода (системные вызовы) ----
+    def _cmd_lsdev(self) -> None:
+        """lsdev — блочные/символьные устройства /dev (listdir/stat по /dev)."""
+        out = self.console.append_output
+        out("УСТРОЙСТВО      ТИП     MAJ:MIN\n", kind="info")
+        try:
+            entries = sorted(os.listdir("/dev"))  # getdents64 по /dev
+        except OSError as e:
+            out(cfg.MSG_T_SYSCALL.format(cmd="lsdev", err=e) + "\n", kind="stderr")
+            return
+        n = 0
+        for name in entries:
+            full = os.path.join("/dev", name)
+            try:
+                st = os.lstat(full)  # lstat: не следуем по symlink
+            except OSError:
+                continue
+            mode = st.st_mode & 0o170000  # S_IFMT
+            if mode == 0o060000:  # S_IFBLK — блочное
+                kind = "block"
+            elif mode == 0o020000:  # S_IFCHR — символьное
+                kind = "char"
+            else:
+                continue
+            out(
+                "{name:<14}  {kind:<6}  {maj}:{min}\n".format(
+                    name=name,
+                    kind=kind,
+                    maj=os.major(st.st_rdev),
+                    min=os.minor(st.st_rdev),
+                )
+            )
+            n += 1
+        if n == 0:
+            out("(устройств не найдено)\n", kind="info")
+
+    def _cmd_mounts(self) -> None:
+        """mounts — смонтированные ФС (чтение /proc/mounts — read(2))."""
+        out = self.console.append_output
+        try:
+            with open("/proc/mounts", "r") as f:
+                lines = f.readlines()
+        except OSError as e:
+            out(
+                cfg.MSG_T_NOVENTRY.format(name="/proc/mounts", err=e) + "\n",
+                kind="stderr",
+            )
+            return
+        out("УСТРОЙСТВО      ТОЧКА МОНТИРОВАНИЯ      ТИП ФС\n", kind="info")
+        for line in lines:
+            parts = line.split()
+            if len(parts) < 3:
+                continue
+            mount = parts[1].replace("\\040", " ").replace("\\011", "\t")
+            out(
+                "{dev:<14}  {mount:<22}  {fstype}\n".format(
+                    dev=parts[0], mount=mount, fstype=parts[2]
+                )
+            )
+
+    def _cmd_ioports(self) -> None:
+        """ioports — карта портов ввода/вывода (чтение /proc/ioports)."""
+        out = self.console.append_output
+        try:
+            with open("/proc/ioports", "r") as f:
+                text = f.read()
+        except OSError as e:
+            out(
+                cfg.MSG_T_NOVENTRY.format(name="/proc/ioports", err=e) + "\n",
+                kind="stderr",
+            )
+            return
+        if text.strip():
+            out(text)
+        else:
+            out("(/proc/ioports пуст)\n", kind="info")
 
     def _run_external(self, line: str) -> None:
         """Внешняя команда — через «bash -c» с захватом вывода."""

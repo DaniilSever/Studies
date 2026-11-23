@@ -81,7 +81,8 @@ class monitoring_ui(QMainWindow):
         m_mon.addSeparator()
         m_mon.addAction(act("save_report", "Сохранить отчёт...", "Ctrl+S"))
         m_mon.addAction(act("gpu", "Информация о видеокарте", "Ctrl+G"))
-        m_mon.addAction(act("log", "Открыть лог-файл", "Ctrl+Shift+L"))
+        m_mon.addAction(act("log", "Сохранить журнал ФМ...", "Ctrl+Shift+L"))
+        m_mon.addAction(act("gpu_log", "Сохранить лог видеокарты..."))
         m_mon.addSeparator()
         m_mon.addAction(act("exit", "Закрыть", "Ctrl+W"))
 
@@ -104,7 +105,7 @@ class monitoring_ui(QMainWindow):
             ("refresh", "Обновить"),
             ("save_report", "Сохранить отчёт"),
             ("gpu", "Видеокарта"),
-            ("log", "Лог-файл"),
+            ("log", "Журнал ФМ"),
         ):
             btn = QPushButton(label)
             btn.clicked.connect(A(key).trigger)
@@ -197,7 +198,8 @@ class monitoring_func(monitoring_ui):
         A("refresh").triggered.connect(self._refresh)
         A("save_report").triggered.connect(self.save_report)
         A("gpu").triggered.connect(self.gpu_open_popup)
-        A("log").triggered.connect(self.log_save)
+        A("log").triggered.connect(self.journal_save)
+        A("gpu_log").triggered.connect(self.log_save)
         A("about").triggered.connect(
             lambda: QMessageBox.about(self, "О мониторинге", cfg.ABOUT_TEXT_MONITORING)
         )
@@ -603,9 +605,76 @@ class monitoring_func(monitoring_ui):
             self._gpu_fifo = None
 
     # ==================================================================
-    #  Лог-файл (Задание 4: возможность сохранения полученных данных)
+    #  Лог-файлы (Задание 4: возможность сохранения полученных данных)
+    #  * журнал файлового менеджера — «информация о посещениях и
+    #    параметрах посещений ФМ» (куда заходил, что создавал/удалял);
+    #  * лог видеокарты — снимок текущих параметров GPU.
     # ==================================================================
+    def journal_save(self) -> None:
+        """Сохранить журнал файлового менеджера (посещения и операции).
+
+        Источник — fm_journal.log, который ведёт filemanager (куда
+        заходил, что создавал/переименовывал/удалял). Здесь выбираем
+        место копии и дописываем параметры посещений ФМ (сессия,
+        длительность, число событий).
+        """
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Сохранить журнал файлового менеджера",
+            os.path.join(
+                cfg.APP_ROOT,
+                "fm_journal_{}.txt".format(datetime.now().strftime("%Y%m%d_%H%M%S")),
+            ),
+            "Текстовые файлы (*.txt);;Все файлы (*)",
+        )
+        if not path:
+            return
+
+        # читаем журнал, который ведёт файловый менеджер
+        entries: list[str] = []
+        try:
+            with open(cfg.FM_JOURNAL_PATH, "r", encoding="utf-8") as f:
+                entries = [line.rstrip("\n") for line in f if line.strip()]
+        except FileNotFoundError:
+            QMessageBox.information(
+                self,
+                "Журнал ФМ",
+                "Журнал пуст: файловый менеджер ещё не запускался или событий не было.",
+            )
+            return
+        except OSError as e:
+            QMessageBox.critical(self, "Журнал ФМ", cfg.MSG_JOURNAL_FAIL.format(err=e))
+            return
+
+        # параметры посещений ФМ: сессия мониторинга и объём журнала
+        visits = sum(1 for e in entries if "переход в каталог" in e)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("Журнал «Супрапп» — посещения и операции файлового менеджера\n")
+                f.write(
+                    "Сохранён: {}\n".format(
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    )
+                )
+                f.write(
+                    "Всего событий: {n}, посещений каталогов: {v}\n".format(
+                        n=len(entries), v=visits
+                    )
+                )
+                f.write("----------------------------------------\n")
+                for e in entries:
+                    f.write(e + "\n")
+        except OSError as e:
+            QMessageBox.critical(self, "Журнал ФМ", cfg.MSG_JOURNAL_FAIL.format(err=e))
+            return
+        QMessageBox.information(
+            self,
+            "Журнал ФМ",
+            cfg.MSG_JOURNAL_SAVED.format(path=path, n=len(entries)),
+        )
+
     def log_save(self) -> None:
+        """Сохранить лог видеокарты (снимок параметров GPU)."""
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Сохранить лог (видеокарта)",

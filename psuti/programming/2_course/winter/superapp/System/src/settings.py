@@ -18,11 +18,24 @@ FILEMANAGER_SCRIPT = os.path.join(MODULES_DIR, "filemanager.py")
 # --- Среда «Суперапп» (корневая папка-среда) ---
 SUPERAPP_ROOT = os.path.dirname(os.path.abspath(APP_ROOT))
 
-# --- Защищённые папки ---
+# --- Папки ---
 SYSTEM_FOLDER = "System"
+DOCUMENTS_FOLDER = "Документы"
+DOWNLOADS_FOLDER = "Загрузки"
+PICTURES_FOLDER = "Изображения"
+VIDEOS_FOLDER = "Видео"
+PROJECTS_FOLDER = "Проекты"
 TRASH_FOLDER = "Корзина"
+
+# --- Защищенная папка ---
 PROTECTED_NAMES = frozenset({SYSTEM_FOLDER})
 
+
+DOCUMENTS_PATH = os.path.join(SUPERAPP_ROOT, DOCUMENTS_FOLDER)
+DOWNLOADS_PATH = os.path.join(SUPERAPP_ROOT, DOWNLOADS_FOLDER)
+PICTURES_PATH = os.path.join(SUPERAPP_ROOT, PICTURES_FOLDER)
+VIDEOS_PATH = os.path.join(SUPERAPP_ROOT, VIDEOS_FOLDER)
+PROJECTS_PATH = os.path.join(SUPERAPP_ROOT, PROJECTS_FOLDER)
 TRASH_PATH = os.path.join(SUPERAPP_ROOT, TRASH_FOLDER)
 # --------------- Текст сообщений ---------------
 MSG_SYSTEM_PROTECTED = (
@@ -57,6 +70,32 @@ MSG_BAD_DIR = "cd: нет такого каталога: {path}\n"
 MSG_CD_NOTDIR = "cd: {path} не является каталогом\n"
 MSG_EXIT = "exit\n"
 
+# --- Терминал: сообщения встроенных команд (сисколлы) ---
+MSG_T_NOARGS = "{cmd}: не указан операнд\n"
+MSG_T_TWOARGS = "{cmd}: нужны два аргумента (источник и назначение)\n"
+MSG_T_NOENT = "{cmd}: {path}: нет такого файла или каталога\n"
+MSG_T_EXISTS = "{cmd}: {path}: уже существует\n"
+MSG_T_ISDIR = "{cmd}: {path}: это каталог\n"
+MSG_T_DIRNONEMPTY = "{cmd}: {path}: каталог не пуст\n"
+MSG_T_CANTDEL = "{cmd}: {path}: не удалось удалить: {err}\n"
+MSG_T_CANTCREATE = "{cmd}: не удалось создать {path}: {err}\n"
+MSG_T_CANTCOPY = "{cmd}: не удалось скопировать {src} -> {dst}: {err}\n"
+MSG_T_CANTMOVE = "{cmd}: не удалось переместить {src} -> {dst}: {err}\n"
+MSG_T_SYSCALL = "{cmd}: ошибка системного вызова: {err}\n"
+MSG_T_BADPID = "kill: {pid}: неверный идентификатор процесса\n"
+MSG_T_NOPERM = "kill: {pid}: операция не разрешена\n"
+MSG_T_KILLED = "kill: сигнал {sig} отправлен процессу {pid}\n"
+MSG_T_KILLED_ESRCH = "kill: {pid}: процесс не существует\n"
+MSG_T_PS_HDR = "{pid:>7}  {user:<12}  {state:<4}  {start}  {name}\n"
+MSG_T_PS_EMPTY = "(процессов не найдено)\n"
+MSG_T_NOVENTRY = "{name}: нет данных ({err})\n"
+
+# --- Журнал файлового менеджера ---
+FM_JOURNAL_NAME = "fm_journal.log"
+FM_JOURNAL_PATH = os.path.join(APP_ROOT, FM_JOURNAL_NAME)
+MSG_JOURNAL_SAVED = "Журнал файлового менеджера сохранён:\n{path}\nЗаписей: {n}"
+MSG_JOURNAL_FAIL = "Не удалось сохранить журнал:\n{err}"
+
 MSG_NO_REPORT = "Нет процессов для сохранения: мониторинг ещё не запущен."
 MSG_REPORT_SAVED = "Отчёт сохранён:\n{path}\nПроцессов: {n}"
 MSG_REPORT_FAIL = "Не удалось сохранить отчёт:\n{err}"
@@ -69,17 +108,30 @@ MSG_POPUP_FAIL = "Не удалось открыть всплывающее ок
 BANNER = "Суперапп — встроенный терминал Linux. Введите «help» или «?» для справки.\n"
 HELP_TEXT = """Доступные команды:
 
-  Встроенные:
+  Встроенные (реализованы системными вызовами — без shell):
     cd [ПУТЬ]        сменить каталог (по умолчанию — корень «Суперапп»)
-    pwd              вывести текущий каталог
-    ls [ПУТЬ]        список файлов (через shell)
+    pwd              вывести текущий каталог (getcwd)
+    ls [ПУТЬ]        список файлов каталога (listdir/stat)
+    mkdir ПУТЬ       создать каталог (mkdir)
+    rmdir ПУТЬ       удалить пустой каталог (rmdir)
+    cp ИСТ ДСТ       скопировать файл/каталог (read/write, каталог — рекурсивно)
+    mv ИСТ ДСТ       переместить/переименовать (rename)
+    rm [-r] ПУТЬ     удалить файл или каталог (unlink/rmdir, -r — рекурсивно)
     clear            очистить экран (Ctrl+L)
     history          история команд текущей сессии
     echo ТЕКСТ       вывести текст
     help, ?          эта справка
     exit, quit       закрыть терминал
 
-  Внешние команды выполняются через «bash -c» (напр.: ps aux, top, date, whoami).
+  Вариант 5 (нечётный): управление процессами + устройства ввода/вывода:
+    ps               список процессов ОС (чтение /proc/[pid]/stat)
+    kill PID [СИГ]   отправить сигнал процессу (kill)
+    lsdev            список блочных/символьных устройств /dev
+                     (listdir/stat по /dev)
+    mounts           список смонтированных ФС (чтение /proc/mounts)
+    ioports          карта портов ввода/вывода (чтение /proc/ioports)
+
+  Внешние команды выполняются через «bash -c» (напр.: top, date, whoami).
 
   Горячие клавиши:
     Ctrl+C  прервать команду
@@ -150,6 +202,7 @@ TERMINAL_PROMPT_HOST = "superapp"
 TERMINAL_PROMPT_TEMPLATE = "{user}@{host}:{cwd}$ "
 
 TERMINAL_BUILTIN_COMMANDS = (
+    # базовый набор
     "cd",
     "pwd",
     "clear",
@@ -159,6 +212,19 @@ TERMINAL_BUILTIN_COMMANDS = (
     "echo",
     "exit",
     "quit",
+    # файловые операции — сисколлы (os.listdir/os.mkdir/os.rename/...)
+    "ls",
+    "mkdir",
+    "rmdir",
+    "cp",
+    "mv",
+    "rm",
+    # вариант 5 (нечётный): управление процессами + устройства ввода/вывода
+    "ps",
+    "kill",
+    "lsdev",
+    "mounts",
+    "ioports",
 )
 
 # ----------------- Мониторинг -----------------

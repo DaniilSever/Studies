@@ -399,6 +399,9 @@ class filemanager_func(filemanager_ui):
     навигация, создание/переименование/удаление, корзина, поиск, буфер
     обмена, открытие папок/файлов, запуск popup.py / terminal.py /
     monitoring.py, защита папки System.
+
+    Журнал посещений и операций (куда заходил, что создавал/удалял)
+    пишется в fm_journal.log рядом с System (cfg.FM_JOURNAL_PATH).
     """
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
@@ -414,8 +417,29 @@ class filemanager_func(filemanager_ui):
         # корни съёмных носителей (чтобы «Вверх» не уводил из них в ОС)
         self._removable_roots: set[str] = set()
 
+        self._journal("start", "запуск файлового менеджера")
+
         self._wire_signals()
         self._update_nav()
+
+    # --- журнал посещений и операций ФМ (Лог-файл, Задание) -----------------
+    def _journal(self, action: str, details: str) -> None:
+        """Записать событие в журнал посещений/операций ФМ.
+
+        Формат: <дата время> <действие> <подробности>. Сбои записи в журнал
+        (например, нет места на диске) не должны ломать сам менеджер —
+        ошибки молча игнорируются.
+        """
+        try:
+            with open(cfg.FM_JOURNAL_PATH, "a", encoding="utf-8") as f:
+                ts = time.strftime("%Y-%m-%d %H:%M:%S")
+                f.write(
+                    "{ts}  {action:10}  {details}\n".format(
+                        ts=ts, action=action, details=details
+                    )
+                )
+        except OSError:
+            pass  # журнал вспомогательный — не прерываем работу ФМ
 
     # --- подключение сигналов UI -> логика ----------------------------------
     def _wire_signals(self) -> None:
@@ -477,6 +501,7 @@ class filemanager_func(filemanager_ui):
         self.path_bar.setText(path)
         if push_history:
             self._push_history(path)
+        self._journal("visit", "переход в каталог: " + path)
         self._populate(path)
         self._update_nav()
         return True
@@ -621,6 +646,12 @@ class filemanager_func(filemanager_ui):
         except OSError as e:
             self._error(cfg.MSG_CREATE_FAIL.format(name=name, err=e))
             return False
+        self._journal(
+            "create",
+            "создан {what}: {path}".format(
+                what="каталог" if is_dir else "файл", path=full
+            ),
+        )
         self._reload()
         return True
 
@@ -655,6 +686,10 @@ class filemanager_func(filemanager_ui):
         except OSError as e:
             self._error(cfg.MSG_RENAME_FAIL.format(name=old, err=e))
             return
+        self._journal(
+            "rename",
+            "«{old}» -> «{new}» (в {base})".format(old=old, new=new, base=base),
+        )
         self._reload()
 
     def _delete_trash(self) -> None:
@@ -680,6 +715,10 @@ class filemanager_func(filemanager_ui):
         except OSError as e:
             self._error(cfg.MSG_TRASH_FAIL.format(name=name, err=e))
             return
+        self._journal(
+            "trash",
+            "в корзину: {src} -> {dst}".format(src=src, dst=dst),
+        )
         self._reload()
 
     def _delete_perm(self) -> None:
@@ -707,6 +746,10 @@ class filemanager_func(filemanager_ui):
         except OSError as e:
             self._error(cfg.MSG_DELETE_FAIL.format(name=name, err=e))
             return
+        self._journal(
+            "delete",
+            "безвозвратно удалено: {path}".format(path=src),
+        )
         self._reload()
 
     def _properties(self) -> None:
@@ -793,6 +836,11 @@ class filemanager_func(filemanager_ui):
                     shutil.copy2(src, dst)
             except OSError as e:
                 self._error(cfg.MSG_PASTE_FAIL.format(name=name, err=e))
+                continue
+            self._journal(
+                "move" if op == "cut" else "copy",
+                "{src} -> {dst}".format(src=src, dst=dst),
+            )
         if any(op == "cut" for op, _ in self._clip):
             self._clip = []
         self._reload()
@@ -853,6 +901,11 @@ class filemanager_func(filemanager_ui):
                     shutil.copy2(src, dst)
             except OSError as e:
                 self._error(cfg.MSG_DND_MOVE_FAIL.format(name=name, err=e))
+                continue
+            self._journal(
+                "dnd-move" if from_app else "dnd-copy",
+                "{src} -> {dst}".format(src=src, dst=dst),
+            )
         self._reload()
 
     def _do_search(self, pattern: str) -> list[str]:

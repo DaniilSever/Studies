@@ -10,6 +10,11 @@ from .modules.filemanager import filemanager_func
 
 def _ensure_environment() -> None:
     """Минимальная среда «Суперапп»: Корзина (System уже есть по структуре)."""
+    os.makedirs(cfg.DOCUMENTS_PATH, exist_ok=True)
+    os.makedirs(cfg.DOWNLOADS_PATH, exist_ok=True)
+    os.makedirs(cfg.PICTURES_PATH, exist_ok=True)
+    os.makedirs(cfg.VIDEOS_PATH, exist_ok=True)
+    os.makedirs(cfg.PROJECTS_PATH, exist_ok=True)
     os.makedirs(cfg.TRASH_PATH, exist_ok=True)
 
 
