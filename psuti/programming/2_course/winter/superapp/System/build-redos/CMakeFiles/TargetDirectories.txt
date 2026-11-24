@@ -1,0 +1,17 @@
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_core.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_terminal.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_monitoring.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_popup.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/edit_cache.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/rebuild_cache.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_core_autogen_timestamp_deps.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_core_autogen.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_autogen_timestamp_deps.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_autogen.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_terminal_autogen_timestamp_deps.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_terminal_autogen.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_monitoring_autogen_timestamp_deps.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_monitoring_autogen.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_popup_autogen_timestamp_deps.dir
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/superapp_popup_autogen.dir
