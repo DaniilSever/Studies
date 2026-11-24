@@ -1,5 +1,5 @@
-/home/denver/Documents/superapp/System/build/superapp_core_autogen/L3BDCI33OQ/moc_monitoring.cpp: /home/denver/Documents/superapp/System/src/modules/monitoring.h \
-  /home/denver/Documents/superapp/System/build/superapp_core_autogen/moc_predefs.h \
+/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_core_autogen/L3BDCI33OQ/moc_monitoring.cpp: /home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/modules/monitoring.h \
+  /home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_core_autogen/moc_predefs.h \
   /nix/store/15h9askp4k1lx44d9871wid23j2a8ijp-glibc-2.42-61-dev/include/assert.h \
   /nix/store/15h9askp4k1lx44d9871wid23j2a8ijp-glibc-2.42-61-dev/include/bits/atomic_wide_counter.h \
   /nix/store/15h9askp4k1lx44d9871wid23j2a8ijp-glibc-2.42-61-dev/include/bits/cpu-set.h \

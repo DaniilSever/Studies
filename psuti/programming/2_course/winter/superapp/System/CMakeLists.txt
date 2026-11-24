@@ -13,7 +13,6 @@ add_library(superapp_core STATIC
     src/popup.cpp)
 target_link_libraries(superapp_core PUBLIC Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
 target_include_directories(superapp_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_compile_definitions(superapp_core PRIVATE SUPERAPP_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 add_executable(superapp src/app.cpp)
 target_link_libraries(superapp PRIVATE superapp_core)
 add_executable(superapp_terminal src/terminal_main.cpp)

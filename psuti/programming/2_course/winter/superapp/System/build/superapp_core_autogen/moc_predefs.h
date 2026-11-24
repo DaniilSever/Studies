@@ -472,7 +472,6 @@
 #define __FLT_DECIMAL_DIG__ 9
 #define __UINT_FAST16_MAX__ 0xffffffffffffffffUL
 #define __LDBL_NORM_MAX__ 1.18973149535723176502126385303097021e+4932L
-#define SUPERAPP_SOURCE_ROOT "/home/denver/Documents/superapp/System"
 #define __GCC_ATOMIC_SHORT_LOCK_FREE 2
 #define __SIZE_MAX__ 0xffffffffffffffffUL
 #define __UINT_FAST8_TYPE__ unsigned char

@@ -1,16 +1,16 @@
 {
-	"BUILD_DIR" : "/home/denver/Documents/superapp/System/build/superapp_monitoring_autogen",
-	"CMAKE_BINARY_DIR" : "/home/denver/Documents/superapp/System/build",
-	"CMAKE_CURRENT_BINARY_DIR" : "/home/denver/Documents/superapp/System/build",
-	"CMAKE_CURRENT_SOURCE_DIR" : "/home/denver/Documents/superapp/System",
+	"BUILD_DIR" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_monitoring_autogen",
+	"CMAKE_BINARY_DIR" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System",
 	"CMAKE_EXECUTABLE" : "/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/bin/cmake",
 	"CMAKE_LIST_FILES" : 
 	[
-		"/home/denver/Documents/superapp/System/CMakeLists.txt",
-		"/home/denver/Documents/superapp/System/build/CMakeFiles/4.1.2/CMakeSystem.cmake",
+		"/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/CMakeLists.txt",
+		"/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/CMakeFiles/4.1.2/CMakeSystem.cmake",
 		"/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/share/cmake-4.1/Modules/CMakeSystemSpecificInitialize.cmake",
 		"/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/share/cmake-4.1/Modules/Platform/Linux-Initialize.cmake",
-		"/home/denver/Documents/superapp/System/build/CMakeFiles/4.1.2/CMakeCXXCompiler.cmake",
+		"/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/CMakeFiles/4.1.2/CMakeCXXCompiler.cmake",
 		"/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/share/cmake-4.1/Modules/CMakeSystemSpecificInformation.cmake",
 		"/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/share/cmake-4.1/Modules/CMakeGenericSystem.cmake",
 		"/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/share/cmake-4.1/Modules/CMakeInitializeConfigs.cmake",
@@ -529,14 +529,14 @@
 		"/nix/store/wzvm2pvf98a71v0scgfhmi01lqcxahfr-qtbase-6.11.0/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginAdditionalTargetInfo.cmake",
 		"/nix/store/wzvm2pvf98a71v0scgfhmi01lqcxahfr-qtbase-6.11.0/lib/cmake/Qt6Network/Qt6NetworkVersionlessAliasTargets.cmake"
 	],
-	"CMAKE_SOURCE_DIR" : "/home/denver/Documents/superapp/System",
+	"CMAKE_SOURCE_DIR" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System",
 	"CROSS_CONFIG" : false,
-	"DEP_FILE" : "/home/denver/Documents/superapp/System/build/superapp_monitoring_autogen/deps",
+	"DEP_FILE" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_monitoring_autogen/deps",
 	"DEP_FILE_RULE_NAME" : "superapp_monitoring_autogen/timestamp",
 	"HEADERS" : [],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
-	"INCLUDE_DIR" : "/home/denver/Documents/superapp/System/build/superapp_monitoring_autogen/include",
-	"MOC_COMPILATION_FILE" : "/home/denver/Documents/superapp/System/build/superapp_monitoring_autogen/mocs_compilation.cpp",
+	"INCLUDE_DIR" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_monitoring_autogen/include",
+	"MOC_COMPILATION_FILE" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_monitoring_autogen/mocs_compilation.cpp",
 	"MOC_DEFINITIONS" : 
 	[
 		"QT_CORE_LIB",
@@ -554,7 +554,7 @@
 	],
 	"MOC_INCLUDES" : 
 	[
-		"/home/denver/Documents/superapp/System/src",
+		"/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src",
 		"/nix/store/wzvm2pvf98a71v0scgfhmi01lqcxahfr-qtbase-6.11.0/include/QtWidgets",
 		"/nix/store/wzvm2pvf98a71v0scgfhmi01lqcxahfr-qtbase-6.11.0/include/QtCore",
 		"/nix/store/wzvm2pvf98a71v0scgfhmi01lqcxahfr-qtbase-6.11.0/mkspecs/linux-g++",
@@ -658,26 +658,26 @@
 		"-E",
 		"/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/share/cmake-4.1/Modules/CMakeCXXCompilerABI.cpp"
 	],
-	"MOC_PREDEFS_FILE" : "/home/denver/Documents/superapp/System/build/superapp_monitoring_autogen/moc_predefs.h",
+	"MOC_PREDEFS_FILE" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_monitoring_autogen/moc_predefs.h",
 	"MOC_RELAXED_MODE" : false,
 	"MOC_SKIP" : 
 	[
-		"/home/denver/Documents/superapp/System/build/superapp_autogen/mocs_compilation.cpp",
-		"/home/denver/Documents/superapp/System/build/superapp_core_autogen/mocs_compilation.cpp",
-		"/home/denver/Documents/superapp/System/build/superapp_terminal_autogen/mocs_compilation.cpp"
+		"/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_autogen/mocs_compilation.cpp",
+		"/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_core_autogen/mocs_compilation.cpp",
+		"/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_terminal_autogen/mocs_compilation.cpp"
 	],
 	"MULTI_CONFIG" : false,
 	"PARALLEL" : 4,
-	"PARSE_CACHE_FILE" : "/home/denver/Documents/superapp/System/build/CMakeFiles/superapp_monitoring_autogen.dir/ParseCache.txt",
+	"PARSE_CACHE_FILE" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/CMakeFiles/superapp_monitoring_autogen.dir/ParseCache.txt",
 	"QT_MOC_EXECUTABLE" : "/nix/store/wzvm2pvf98a71v0scgfhmi01lqcxahfr-qtbase-6.11.0/libexec/moc",
 	"QT_UIC_EXECUTABLE" : "",
 	"QT_VERSION_MAJOR" : 6,
 	"QT_VERSION_MINOR" : 11,
-	"SETTINGS_FILE" : "/home/denver/Documents/superapp/System/build/CMakeFiles/superapp_monitoring_autogen.dir/AutogenUsed.txt",
+	"SETTINGS_FILE" : "/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/CMakeFiles/superapp_monitoring_autogen.dir/AutogenUsed.txt",
 	"SOURCES" : 
 	[
 		[
-			"/home/denver/Documents/superapp/System/src/monitoring_main.cpp",
+			"/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/monitoring_main.cpp",
 			"Mu",
 			null
 		]

@@ -1,18 +1,18 @@
 superapp_core_autogen/timestamp: \
-	/home/denver/Documents/superapp/System/CMakeLists.txt \
-	/home/denver/Documents/superapp/System/build/CMakeFiles/4.1.2/CMakeCXXCompiler.cmake \
-	/home/denver/Documents/superapp/System/build/CMakeFiles/4.1.2/CMakeSystem.cmake \
-	/home/denver/Documents/superapp/System/build/superapp_core_autogen/moc_predefs.h \
-	/home/denver/Documents/superapp/System/src/modules/filemanager.cpp \
-	/home/denver/Documents/superapp/System/src/modules/filemanager.h \
-	/home/denver/Documents/superapp/System/src/modules/monitoring.cpp \
-	/home/denver/Documents/superapp/System/src/modules/monitoring.h \
-	/home/denver/Documents/superapp/System/src/modules/terminal.cpp \
-	/home/denver/Documents/superapp/System/src/modules/terminal.h \
-	/home/denver/Documents/superapp/System/src/popup.cpp \
-	/home/denver/Documents/superapp/System/src/popup.h \
-	/home/denver/Documents/superapp/System/src/settings.cpp \
-	/home/denver/Documents/superapp/System/src/settings.h \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/CMakeLists.txt \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/CMakeFiles/4.1.2/CMakeCXXCompiler.cmake \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/CMakeFiles/4.1.2/CMakeSystem.cmake \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/superapp_core_autogen/moc_predefs.h \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/modules/filemanager.cpp \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/modules/filemanager.h \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/modules/monitoring.cpp \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/modules/monitoring.h \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/modules/terminal.cpp \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/modules/terminal.h \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/popup.cpp \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/popup.h \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/settings.cpp \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/settings.h \
 	/nix/store/15h9askp4k1lx44d9871wid23j2a8ijp-glibc-2.42-61-dev/include/assert.h \
 	/nix/store/15h9askp4k1lx44d9871wid23j2a8ijp-glibc-2.42-61-dev/include/bits/atomic_wide_counter.h \
 	/nix/store/15h9askp4k1lx44d9871wid23j2a8ijp-glibc-2.42-61-dev/include/bits/cpu-set.h \

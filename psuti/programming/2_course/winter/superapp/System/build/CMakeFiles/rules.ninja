@@ -126,7 +126,7 @@ rule CUSTOM_COMMAND
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = /nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/bin/cmake --regenerate-during-build -S/home/denver/Documents/superapp/System -B/home/denver/Documents/superapp/System/build
+  command = /nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/bin/cmake --regenerate-during-build -S/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System -B/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build
   description = Re-running CMake...
   generator = 1
 

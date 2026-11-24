@@ -10,6 +10,7 @@
 		"/usr/share/cmake/Modules/CMakeDetermineSystem.cmake",
 		"/usr/share/cmake/Modules/CMakeSystem.cmake.in",
 		"/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build-redos/CMakeFiles/3.30.6/CMakeSystem.cmake",
+		"/usr/share/cmake/Modules/CMakeNinjaFindMake.cmake",
 		"/usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake",
 		"/usr/share/cmake/Modules/Platform/Linux-Initialize.cmake",
 		"/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake",

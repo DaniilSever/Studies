@@ -1,8 +1,8 @@
 superapp_terminal_autogen/timestamp: \
-	/home/denver/Documents/superapp/System/CMakeLists.txt \
-	/home/denver/Documents/superapp/System/build/CMakeFiles/4.1.2/CMakeCXXCompiler.cmake \
-	/home/denver/Documents/superapp/System/build/CMakeFiles/4.1.2/CMakeSystem.cmake \
-	/home/denver/Documents/superapp/System/src/terminal_main.cpp \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/CMakeLists.txt \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/CMakeFiles/4.1.2/CMakeCXXCompiler.cmake \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/build/CMakeFiles/4.1.2/CMakeSystem.cmake \
+	/home/denver/Documents/github/Studies/psuti/programming/2_course/winter/superapp/System/src/terminal_main.cpp \
 	/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/share/cmake-4.1/Modules/CMakeCXXCompiler.cmake.in \
 	/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/share/cmake-4.1/Modules/CMakeCXXCompilerABI.cpp \
 	/nix/store/r9941n32g4wyvggz2703dlplbdq8a6rd-cmake-4.1.2/share/cmake-4.1/Modules/CMakeCXXInformation.cmake \
